@@ -1,0 +1,19 @@
+create or replace TRIGGER WORK_TIMLINE_UPDATE
+AFTER UPDATE ON WORK
+FOR EACH ROW
+DECLARE
+TEST DATE;
+BEGIN
+INSERT INTO timeline (
+    tline_code,    prjct_no,    mem_id,
+    tline_rgsde,    menu_cl_code,    cmd_cl_code, work_code
+) VALUES (
+  TIMELINE_SEQ.NEXTVAL,
+  :NEW.PRJCT_NO,
+  :NEW.MEM_ID,
+  :NEW.WORK_UPDTDE,
+  'WO',
+  'T00102',
+  :NEW.WORK_CODE
+);
+ END;

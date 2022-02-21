@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.accept.dao.AcceptDao">
+	
+	<resultMap type="kr.or.ddit.accept.vo.AcceptMemberVO" id="memberMap" autoMapping="true">
+		<id column="MEM_ID" property="memId"/>
+		
+		<collection property="projectMemRole" javaType="java.util.List" ofType="kr.or.ddit.accept.vo.ProjectMemVO" autoMapping="true">
+			<id column="PRJCT_NO" property="prjctNo"/>
+		</collection>
+	
+	</resultMap>
+	
+	
+	<select id="selectMemById" parameterType="string" resultMap="memberMap">
+			SELECT
+				A.mem_id, mem_pass, mem_hp,
+				mem_email, mem_zip, mem_addr1,
+				mem_addr2, mem_fnm, mem_join_confm_at, mem_lnm,
+				mem_sttus_cl_code, mem_join_de, mem_join_confm_de,
+				mngr_at, psitn_cl_code, pass_error_cnt, indvdlinfo_agre_de, PROFL_IMG_NM,
+				B.AUTHOR, B.B.PRJCT_NO,
+				 MAKENAMEFORMAT(MEM_FNM, MEM_LNM, A.MEM_ID) MEM_NAME
+			FROM
+				mem A LEFT OUTER JOIN PROJECT_MEM B ON (A.MEM_ID = B.MEM_ID)
+				WHERE A.MEM_ID = #{MEMID}
+	</select>
+	
+	<insert id="insertLog" parameterType="kr.or.ddit.accept.vo.LogginInfoVO">
+		<selectKey resultType="int" keyProperty="loginIdNo" order="BEFORE">
+			SELECT LOGININFO_SEQ.NEXTVAL FROM DUAL
+		</selectKey>
+		
+				INSERT INTO loggin_info (
+				    MEM_ID,    IP_ADDR,    CONECT_DT,
+				    LOGIN_ID_NO,    SESION_ID
+				) VALUES (
+				   	#{memId,jdbcType=VARCHAR},
+					#{ipAddr,jdbcType=VARCHAR},
+					SYSDATE,
+					#{loginIdNo,jdbcType=NUMERIC},
+					#{sesionId,jdbcType=VARCHAR}
+				)
+		
+	</insert>
+
+	<update id="updateLastLoginDate" parameterType="string">
+		UPDATE MEM
+		SET 
+		MEM_LAST_LOGIN_DE = SYSDATE
+		WHERE MEM_ID = #{memId}
+	</update>
+
+	
+	<sql id="memSearch" >
+		
+			
+			<if test="simpleSearch!=null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.searchWord)">
+					<choose>
+					<when test="simpleSearch.searchType eq 'name'">
+						AND INSTR(MEM_FNM, #{simpleSearch.searchWord}) > 0
+					</when>
+
+					<when test="simpleSearch.searchType eq 'id'">
+						AND INSTR(MEM_ID, #{simpleSearch.searchWord}) > 0
+					</when>
+
+					<when test="simpleSearch.searchType eq 'mail'">
+						AND INSTR(MEM_EMAIL, #{simpleSearch.searchWord}) > 0
+					</when>
+
+					<otherwise>
+						AND
+						INSTR(MEM_FNM, #{simpleSearch.searchWord}) > 0
+						OR INSTR(MEM_ID, #{simpleSearch.searchWord}) > 0
+						OR INSTR(MEM_EMAIL, #{simpleSearch.searchWord}) > 0
+					</otherwise>
+				</choose>
+			</if>
+		
+		
+		
+	</sql>
+
+	
+	<select id="totalMemRecord" parameterType="kr.or.ddit.accept.vo.AcceptMemPagingVO" resultType="int">
+		SELECT COUNT(*) FROM MEM
+		WHERE MEM_STTUS_CL_CODE != 'M00103' AND MNGR_AT != '1'
+		<include refid="memSearch"/>
+	</select>
+	
+	
+	<select id="selectMemList" parameterType="kr.or.ddit.accept.vo.AcceptMemPagingVO" resultType="kr.or.ddit.accept.vo.AcceptMemberVO">
+			SELECT A.*
+			FROM (
+				SELECT ROWNUM RNUM, B.*
+				FROM (
+					SELECT 
+					   	mem_id, mem_pass,    mem_hp,
+					    mem_email,    mem_zip,    mem_addr1,
+					    mem_addr2,    mem_fnm,    mem_join_confm_at,
+					    mem_sttus_cl_code,    MAKEDATEFORMAT(mem_join_de) mem_join_de,    
+					    MAKEDATEFORMAT(mem_join_confm_de) mem_join_confm_de,
+					    mngr_at,    
+					    psitn_cl_code,    
+					    pass_error_cnt,
+					    MAKEDATEFORMAT(indvdlinfo_agre_de) indvdlinfo_agre_de,    
+					    MAKEDATEFORMAT(mem_last_login_de) mem_last_login_de,    profl_img_nm,    mem_lnm
+						,MAKENAMEFORMAT(MEM_FNM, MEM_LNM, MEM_ID) MEM_NAME
+					FROM MEM
+					WHERE MEM_STTUS_CL_CODE != 'M00103' AND MNGR_AT != '1'
+					<include refid="memSearch"/>
+					ORDER BY MEM_NAME
+					) B
+				) A
+			WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+			
+	</select>
+	
+	<select id="totalNotAcceptRecord" parameterType="kr.or.ddit.accept.vo.AcceptMemPagingVO" resultType="int">
+		SELECT COUNT(*) FROM MEM
+		WHERE MEM_STTUS_CL_CODE != 'M00103' AND MNGR_AT != '1' AND MEM_JOIN_CONFM_AT = '0'
+		<include refid="memSearch"/>
+	</select>
+	
+	
+	<select id="selectNotAcceptList" parameterType="kr.or.ddit.accept.vo.AcceptMemPagingVO" resultType="kr.or.ddit.accept.vo.AcceptMemberVO">
+			SELECT A.*
+			FROM (
+				SELECT ROWNUM RNUM, B.*
+				FROM (
+					SELECT 
+					   	mem_id, mem_pass,    mem_hp,
+					    mem_email,    mem_zip,    mem_addr1,
+					    mem_addr2,    mem_fnm,    mem_join_confm_at,
+					    mem_sttus_cl_code,    MAKEDATEFORMAT(mem_join_de) mem_join_de,    
+					    MAKEDATEFORMAT(mem_join_confm_de) mem_join_confm_de,
+					    mngr_at,    
+					    psitn_cl_code,    
+					    pass_error_cnt,
+					    MAKEDATEFORMAT(indvdlinfo_agre_de) indvdlinfo_agre_de,    
+					    MAKEDATEFORMAT(mem_last_login_de) mem_last_login_de,    profl_img_nm,    mem_lnm
+						,MAKENAMEFORMAT(MEM_FNM, MEM_LNM, MEM_ID) MEM_NAME
+					FROM MEM
+					WHERE MEM_STTUS_CL_CODE != 'M00103' AND MNGR_AT != '1' AND MEM_JOIN_CONFM_AT = '0'
+					<include refid="memSearch"/>
+					ORDER BY  MEM_JOIN_DE DESC 
+					) B
+				) A
+			WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+	
+	
+	<resultMap type="kr.or.ddit.accept.vo.AcceptMemberVO" id="memResultMap" autoMapping="true">
+		<id column="MEM_ID" property="memId"/>
+		<collection property="careerList" javaType="java.util.List" ofType="kr.or.ddit.accept.vo.AcceptMemberCareerVO" autoMapping="true">
+			<id column="CAREER_MATTER_NO" property="careerMatterNo"/>
+		</collection>
+	</resultMap>
+	
+	<select id="selectMember" parameterType="string" resultMap="memResultMap">
+			SELECT
+				A.MEM_ID, MEM_PASS, MEM_HP,
+				MEM_EMAIL, MEM_ZIP, MEM_ADDR1,
+				MEM_ADDR2, MEM_FNM, MEM_JOIN_CONFM_AT,
+				MEM_STTUS_CL_CODE, 
+				MAKEDATEFORMAT(MEM_JOIN_DE) MEM_JOIN_DE, 
+				MAKEDATEFORMAT(MEM_JOIN_CONFM_DE) MEM_JOIN_CONFM_DE,
+				MNGR_AT, PSITN_CL_CODE, PASS_ERROR_CNT,
+				MAKEDATEFORMAT(INDVDLINFO_AGRE_DE) INDVDLINFO_AGRE_DE, 
+				MAKEDATEFORMAT(MEM_LAST_LOGIN_DE) MEM_LAST_LOGIN_DE
+				, PROFL_IMG_NM, MEM_LNM, CAREER_MATTER_NO,
+				PARTCPTN_BIZ, MAKEDATEFORMAT(BEGINDE) BEGINDE, 
+				MAKEDATEFORMAT(ENDDE) ENDDE,
+				ORNT_NM, WRKPLC_NM, OFCPS_NM, ATNDDU,
+				MAKENAMEFORMAT(MEM_FNM, MEM_LNM,A.MEM_ID) MEM_NAME
+			FROM
+				MEM A LEFT OUTER JOIN CAREER_MATTER B ON(A.MEM_ID = B.MEM_ID)
+				WHERE A.MEM_ID = #{memId}
+				ORDER BY MEM_NAME
+	</select>
+	
+	<select id="memProjectInfo" parameterType="string" resultType="kr.or.ddit.makeProject.vo.MakeProjectVO">
+		WITH PRJ AS
+		(
+		<![CDATA[
+		SELECT prjct_no, LPAD('     └',6*4*(LEVEL-1), '&nbsp;') || prjct_nm prjct_nm,
+		]]>
+		sumry,
+		MAKEDATEFORMAT(prjct_beginde) prjct_beginde, MAKEDATEFORMAT(prjct_endde) prjct_endde,
+		upper_prjct_no, prjct_rgsde, prjct_ornt, bsnssclae, DELET_STATE,LEVEL FROM PROJECT
+		START WITH upper_prjct_no
+		IS NULL CONNECT BY PRIOR prjct_no = upper_prjct_no ORDER SIBLINGS BY
+		prjct_no desc ),
+		PRJMEM
+		AS (
+		SELECT mem_id, C.author, prjct_no, createde, D.AUTHOR_NM FROM project_mem C
+		RIGHT OUTER JOIN ROLE D ON(C.AUTHOR = D.AUTHOR) )
+	
+		SELECT A.* , B.AUTHOR, B.AUTHOR_NM FROM PRJ A LEFT
+		OUTER JOIN PRJMEM B ON (A.prjct_no = B.prjct_no) WHERE MEM_ID = #{memId}
+		AND  A.DELET_STATE = 0
+	 </select>
+	
+	<update id="memberAccept" parameterType="string">
+			UPDATE MEM
+			SET MEM_JOIN_CONFM_AT = '1',
+			MEM_JOIN_CONFM_DE = sysdate
+			WHERE
+			MEM_ID = #{memId,jdbcType=VARCHAR} 
+	</update>
+	
+	<update id="allAccept" parameterType="list">
+			UPDATE MEM
+			SET MEM_JOIN_CONFM_AT = '1'
+			WHERE MEM_ID IN (
+			
+				<foreach collection="memId" index="index" item = "mem" separator=",">
+					 
+					#{mem}
+					
+				</foreach>
+			
+			)
+	</update>
+	
+	<delete id="refuseMem" parameterType="string">
+		DELETE FROM MEM
+		WHERE MEM_ID = #{memId}
+	</delete>
+	
+	<select id="memPrtList" parameterType="string" resultType="kr.or.ddit.makeProject.vo.MakeProjectVO">
+	
+		WITH PRJ AS
+		(
+		
+		SELECT prjct_no, prjct_nm,
+		
+        
+		sumry,
+		MAKEDATEFORMAT(prjct_beginde) prjct_beginde, MAKEDATEFORMAT(prjct_endde) prjct_endde,
+		upper_prjct_no, prjct_rgsde, prjct_ornt, bsnssclae, DELET_STATE FROM PROJECT
+		),
+		PRJMEM
+		AS (
+		SELECT mem_id, C.author, prjct_no, createde, D.AUTHOR_NM FROM project_mem C
+		RIGHT OUTER JOIN ROLE D ON(C.AUTHOR = D.AUTHOR) )
+	
+		SELECT A.* , B.AUTHOR, B.AUTHOR_NM FROM PRJ A LEFT
+		OUTER JOIN PRJMEM B ON (A.prjct_no = B.prjct_no) WHERE MEM_ID = #{memId}
+		AND  A.DELET_STATE = 0
+	</select>
+	
+	<select id="memPushCnt" parameterType="string" resultType="int">
+		SELECT COUNT(*) FROM PUSH_MSG WHERE MEM_ID = #{memId}
+	</select>
+</mapper>

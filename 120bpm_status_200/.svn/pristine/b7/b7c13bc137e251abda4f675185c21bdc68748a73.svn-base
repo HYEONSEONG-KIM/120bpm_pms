@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.main.dao.MainDAO">
+	<select id="selectMyProjectList" parameterType="string"
+		resultType="kr.or.ddit.main.vo.MyProjectVO">
+		WITH AUTHMEM AS(
+		SELECT AUTHOR_NM , PRJCT_NO , MEM_ID
+		FROM PROJECT_MEM P INNER JOIN ROLE R
+		ON(P.AUTHOR = R.AUTHOR)
+		) 
+		SELECT
+			P.PRJCT_NO, UPPER_PRJCT_NO,
+			(SELECT T.PRJCT_NM FROM 
+			PROJECT T WHERE T.PRJCT_NO = P.UPPER_PRJCT_NO) "upperPrjctNm",
+			PRJCT_NM, TO_CHAR(PRJCT_BEGINDE, 'YYYY-MM-DD') PRJCT_BEGINDE,
+			TO_CHAR(PRJCT_ENDDE, 'YYYY-MM-DD') PRJCT_ENDDE , 
+			AUTHOR_NM "role.authorNm"
+		FROM PROJECT P INNER JOIN AUTHMEM A ON(P.PRJCT_NO = A.PRJCT_NO) 
+		WHERE A.MEM_ID = #{memId}
+		AND SYSDATE  BETWEEN P.PRJCT_BEGINDE AND (P.PRJCT_ENDDE +1 )
+		AND DELET_STATE = '0' 
+		ORDER BY PRJCT_BEGINDE
+	</select>
+
+	<select id="selectNoticeList"
+		resultType="kr.or.ddit.main.vo.MainNoticeVO">
+		SELECT B.* 
+		FROM(SELECT ROWNUM AS RNUM, A.*
+		FROM(SELECT
+		NOTICE_CODE, NOTICE_SJ, NOTICE_CN,
+		TO_CHAR(NOTICE_RGSDE, 'YYYY.MM.DD')NOTICE_RGSDE, MEM_ID, NOTICE_RDCNT
+		FROM NOTICE 
+		ORDER BY NOTICE_RGSDE DESC) A) B
+		WHERE RNUM BETWEEN 1 AND 5
+	</select>
+	
+	<select id="selectMyProject" parameterType="kr.or.ddit.main.vo.MyPrjctMemVO" resultType="kr.or.ddit.main.vo.MyProjectVO">
+		SELECT 
+			P.PRJCT_NO, PRJCT_NM, SUMRY, 
+			(SELECT COUNT(*) FROM PROJECT_MEM WHERE PRJCT_NO = P.PRJCT_NO AND AUTHOR != 'ROLE_OB') MEM_NUMBER,
+			TO_CHAR(PRJCT_BEGINDE, 'YYYY-MM-DD') PRJCT_BEGINDE,  
+			TO_CHAR(PRJCT_ENDDE, 'YYYY-MM-DD') PRJCT_ENDDE, 
+			UPPER_PRJCT_NO, 
+			(SELECT T.PRJCT_NM FROM 
+			PROJECT T WHERE T.PRJCT_NO = P.UPPER_PRJCT_NO) "upperPrjctNm",
+			TO_CHAR(PRJCT_RGSDE, 'YYYY-MM-DD') PRJCT_RGSDE, 
+			PRJCT_ORNT, BSNSSCLAE
+			FROM PROJECT P  
+		WHERE P.PRJCT_NO = #{prjctNo} 
+		AND DELET_STATE = '0' 
+	</select>
+	
+	<select id="selectWorkCounts" parameterType="kr.or.ddit.mypage.vo.MyWorkVO" resultType="kr.or.ddit.mypage.vo.MyWorkVO">
+		SELECT COUNT(DECODE(WORK_STTUS_CODE,'W00101', 1)) NEWCOUNT,
+	       COUNT(DECODE(WORK_STTUS_CODE,'W00102', 1)) INGCOUNT,
+	       COUNT(DECODE(WORK_STTUS_CODE,'W00103', 1)) DONECOUNT
+		FROM WORK  
+		<if test="prjctNo != null">
+		WHERE PRJCT_NO = #{prjctNo}  
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(ctgryCode)">
+			AND CTGRY_CODE = #{ctgryCode}
+		</if>
+	</select>
+	
+	<select id="selectMyWorkCounts" parameterType="string" resultType="kr.or.ddit.mypage.vo.MyWorkVO">
+	<![CDATA[
+		SELECT P.PRJCT_NO, PRJCT_NM,
+            (SELECT COUNT(DECODE(WORK_STTUS_CODE,'W00101', 1)) FROM WORK WHERE MEM_ID = #{memId} AND PRJCT_NO=P.PRJCT_NO) NEWCOUNT,
+            (SELECT COUNT(DECODE(WORK_STTUS_CODE,'W00102', 1)) FROM WORK WHERE MEM_ID = #{memId} AND PRJCT_NO=P.PRJCT_NO) INGCOUNT,
+            (SELECT COUNT(DECODE(WORK_STTUS_CODE,'W00103', 1)) FROM WORK WHERE MEM_ID = #{memId} AND PRJCT_NO=P.PRJCT_NO) DONECOUNT
+		FROM PROJECT P INNER JOIN PROJECT_MEM M ON(P.PRJCT_NO=M.PRJCT_NO)
+		WHERE MEM_ID = #{memId}
+        AND PRJCT_BEGINDE <= SYSDATE
+        AND PRJCT_ENDDE >= SYSDATE
+        ORDER BY P.PRJCT_NO
+        ]]>
+	</select>
+	
+	<select id="selectMyWorkCtgrys" parameterType="int" resultType="kr.or.ddit.mypage.vo.MyWorkVO">
+		SELECT CTGRY_CODE , CTGRY_NM 
+		FROM WORK_CATEGORY  
+		WHERE PRJCT_NO = #{prjctNo}
+        ORDER BY CTGRY_NM
+	</select> 
+	
+	<select id="selectMyPrjctMems"  parameterType="kr.or.ddit.main.vo.MyPrjctMemVO" resultType="kr.or.ddit.main.vo.MyPrjctMemVO"> 
+		SELECT M.MEM_ID, MAKENAMEFORMAT(MEM_FNM, MEM_LNM, M.MEM_ID) MEM_NAME, PROFL_IMG_NM,
+		<choose>
+	    	<when test="mngrAt eq '1'">
+		     MEM_EMAIL, 
+	    	</when> 
+	    	<otherwise>
+		    DECODE((SELECT SETUP_VALUE FROM MEM_SETUP WHERE SETUP_CODE='S00107' AND SETUP_CN_NO=2 AND MEM_ID=M.MEM_ID),0,MEM_EMAIL,'-') MEM_EMAIL, 
+	    	</otherwise> 
+	    </choose>
+			M.AUTHOR, (SELECT AUTHOR_NM FROM ROLE WHERE AUTHOR = M.AUTHOR) AUTHOR_NM, 
+			PRJCT_NO, MAKEDATEFORMAT(CREATEDE) CREATEDE
+			FROM PROJECT_MEM M LEFT OUTER JOIN MEM E ON(M.MEM_ID = E.MEM_ID)
+		WHERE PRJCT_NO = #{prjctNo}
+		AND AUTHOR != 'ROLE_OB'
+	</select>
+	
+	<select id="endPrtMemList" parameterType="int" resultType="kr.or.ddit.main.vo.MyPrjctMemVO">
+
+		SELECT 
+			M.MEM_ID, MAKENAMEFORMAT(MEM_FNM, MEM_LNM, M.MEM_ID) MEM_NAME,PROFL_IMG_NM,MEM_EMAIL,
+			M.AUTHOR, (SELECT AUTHOR_NM FROM ROLE WHERE AUTHOR = M.AUTHOR) AUTHOR_NM,
+			PRJCT_NO, MAKEDATEFORMAT(CREATEDE) CREATEDE
+		FROM END_PRT_MEM M LEFT OUTER JOIN MEM E ON(M.MEM_ID = E.MEM_ID)
+		WHERE PRJCT_NO = #{prtId}
+	
+	</select>
+	
+	<select id="selectCurNews" parameterType="String" resultType="kr.or.ddit.main.vo.MyBoardVO">
+		SELECT A.*
+		FROM(
+		    SELECT 
+		        B.PRJCT_NO, B.MENU_CL_CODE, BO_NO, BO_SJ, 
+		        BO_CN, PARENT_BO_NO,  B.MEM_ID, 
+		        MAKENAMEFORMAT(M.MEM_FNM, M.MEM_LNM, B.MEM_ID) MEM_NAME,
+		        MAKEDATEFORMAT(B.BO_RGSDE) || ' ' || MAKETIMEFORMAT(B.BO_RGSDE) BO_RGSDE, 
+		        ROW_NUMBER() OVER(ORDER BY BO_RGSDE DESC) RNUM,
+		        LIKE_CNT, BO_PARENT, OTHBC_AT
+		    FROM BOARD B INNER JOIN MEM M ON(B.MEM_ID = M.MEM_ID)
+		   		 INNER JOIN PROJECT_MEM P ON(B.PRJCT_NO=P.PRJCT_NO)
+		    WHERE B.MENU_CL_CODE = 'NE'
+		    AND P.MEM_ID = #{memId}
+		)A
+		WHERE RNUM = 1 
+	</select>
+	
+	<select id="selectWorkAvg" parameterType="int" resultType="int">
+		SELECT NVL(ROUND(AVG(WORK_PRGS_DGREE_POINT),-1),0) FROM WORK WHERE PRJCT_NO = #{prtId}
+	</select>
+	
+	<select id="selectMyPrjctRegCnts" resultType="kr.or.ddit.main.vo.MyProjectVO">
+		<![CDATA[
+		SELECT TO_CHAR(A.DAY, 'YYYY-MM') AS THISMONTHS,
+		    (SELECT COUNT(*) FROM PROJECT WHERE TO_CHAR(PRJCT_RGSDE,'YYYY-MM')=TO_CHAR(A.DAY, 'YYYY-MM')) PRJCTCNT
+		FROM( 
+				    SELECT TO_DATE(TO_CHAR(SYSDATE, 'YYYY')||'-01-01')+ LEVEL - 1  AS DAY
+				    FROM DUAL 
+				    CONNECT BY LEVEL <= (SYSDATE - TO_DATE(TO_CHAR(SYSDATE, 'YYYY')||'-01-01')+1)
+		  		)A 
+		GROUP BY TO_CHAR(A.DAY, 'YYYY-MM')
+		ORDER BY TO_CHAR(A.DAY, 'YYYY-MM')
+		]]>
+	</select>
+	
+	<select id="selectPrjctSttsCount" resultType="kr.or.ddit.main.vo.MyProjectVO">
+	<![CDATA[
+		SELECT YETCOUNT, DONECOUNT, ((SELECT COUNT(*) FROM PROJECT )-YETCOUNT-DONECOUNT) INGCOUNT
+		FROM(SELECT 
+		        (SELECT COUNT(*) FROM PROJECT WHERE PRJCT_BEGINDE > SYSDATE) YETCOUNT,
+		        (SELECT COUNT(*) FROM PROJECT WHERE PRJCT_ENDDE < SYSDATE) DONECOUNT
+		    FROM DUAL
+		    )A
+		GROUP BY YETCOUNT, DONECOUNT
+		]]>
+	</select>
+</mapper>

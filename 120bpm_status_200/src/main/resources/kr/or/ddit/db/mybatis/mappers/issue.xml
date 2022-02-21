@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.issue.dao.IssueDAO">
+
+<sql id="searchFrag">
+	<if test="simpleSearch != null">
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.issuePriortCode)">
+		AND I.ISSUE_PRIORT_CODE =#{simpleSearch.issuePriortCode}
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.issueSolutAt)">
+		AND I.ISSUE_SOLUT_AT =#{simpleSearch.issueSolutAt}
+		</if>
+	<if test="simpleSearch!=null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.searchWord)">
+	AND
+				<choose>
+					<when test="simpleSearch.searchType eq 'workTitle'">
+						INSTR(work_sj, #{simpleSearch.searchWord}) > 0
+					</when>
+					<when test="simpleSearch.searchType eq 'memId'">
+						INSTR(MAKENAMEFORMAT(h.MEM_FNM, h.MEM_LNM, h.MEM_ID ), #{simpleSearch.searchWord}) > 0
+					</when>
+					<when test="simpleSearch.searchType eq 'title'" >
+						INSTR(ISSUE_SJ, #{simpleSearch.searchWord}) > 0
+					</when>
+					<otherwise>
+						(
+							INSTR(work_sj, #{simpleSearch.searchWord}) > 0
+							OR  INSTR(MAKENAMEFORMAT(h.MEM_FNM, h.MEM_LNM, h.MEM_ID ), #{simpleSearch.searchWord}) > 0
+							OR INSTR(ISSUE_SJ, #{simpleSearch.searchWord}) > 0
+						)
+					</otherwise>
+				</choose>
+	
+	</if>
+	</if>
+</sql>
+
+<resultMap type="kr.or.ddit.issue.vo.IssueVO" id="issueDetail" autoMapping="true">
+<id property="issueNo" column="ISSUE_NO"/>
+	<collection property="issueFileList" autoMapping="true" ofType="kr.or.ddit.issue.vo.IssueFileVO">
+		<id property="issueFileCode" column="ISSUE_FILE_CODE"/>	
+	</collection>
+	<collection property="workObserverList"  autoMapping="true" ofType="kr.or.ddit.work.vo.ObserverVO">
+	<id property="observerId" column="OBSERVER_ID"/>
+				<id property="observerName" column="OBSERVER_NAME"/>		
+	</collection>
+</resultMap>
+
+
+<select id="selectIssueForUpdate" parameterType="kr.or.ddit.issue.vo.IssueVO" resultMap="issueDetail">
+SELECT
+            i.ISSUE_NO,    ISSUE_SJ,    TO_CHAR( ISSUE_RGSDE ,'yyyy-mm-dd') ISSUE_RGSDE, W.WORK_SJ,
+            ISSUE_OTHBC_AT,    ISSUE_CN,    I.WORK_CODE, C.CTGRY_NM ,
+            I.MEM_ID,    I.PRJCT_NO,    I.CTGRY_CODE, issue_solut_at, case when issue_solut_at =1 then '해결' else '미해결' end solute_Nm ,
+            ISSUE_PRIORT_CODE, (SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CMMN_CODE_DETAIL.CODE_NO =ISSUE_PRIORT_CODE ) prior_Nm,
+            ISSUE_UPDTDE , MAKENAMEFORMAT(H.MEM_FNM, H.MEM_LNM, H.MEM_ID ) MEM_NAME , (SELECT COUNT(*) FROM ISSUE_REP P WHERE I.ISSUE_NO=P.ISSUE_NO) REP_COUNT
+           , (SELECT MEM_LNM||MEM_FNM  FROM MEM C WHERE C.MEM_ID= O.MEM_ID) OBSERVER_NAME ,
+           F.ISSUE_FILE_NM , F.ISSUE_FILE_CODE , PRJCT_NM
+        FROM
+            ISSUE I INNER JOIN MEM H ON(H.MEM_ID = I.MEM_ID)
+            LEFT OUTER JOIN WORK W ON(I.WORK_CODE = W.WORK_CODE)
+            LEFT OUTER JOIN WORK_CATEGORY C ON(C.CTGRY_CODE = I.CTGRY_CODE)
+            LEFT OUTER JOIN OBSERVER O ON (W.WORK_CODE = O.WORK_CODE)
+            LEFT OUTER JOIN ISSUE_FILE F ON(I.ISSUE_NO = F.ISSUE_NO)
+            LEFT OUTER JOIN PROJECT P ON (P.PRJCT_NO = I.PRJCT_NO) 
+            WHERE I.PRJCT_NO =#{prjctNo}
+            AND I.ISSUE_NO = #{issueNo}   
+             AND (F.ISSUE_FILE_DEL_AT = '0' OR F.ISSUE_FILE_DEL_AT IS NULL) 
+            ORDER BY ISSUE_RGSDE DESC 
+</select>
+
+
+<select id="selectIssueDetails" parameterType="kr.or.ddit.issue.vo.IssueVO" resultMap="issueDetail">
+SELECT
+            i.ISSUE_NO,    ISSUE_SJ ,    MAKEDATEFORMAT(ISSUE_RGSDE) ISSUE_RGSDE, W.WORK_SJ,
+            ISSUE_OTHBC_AT,    ISSUE_CN,    I.WORK_CODE,
+            I.MEM_ID,    I.PRJCT_NO,    I.CTGRY_CODE, issue_solut_at, case when issue_solut_at =1 then '해결' else '미해결' end solute_Nm ,
+            ISSUE_PRIORT_CODE, (SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CMMN_CODE_DETAIL.CODE_NO =ISSUE_PRIORT_CODE ) prior_Nm,
+            ISSUE_UPDTDE , MAKENAMEFORMAT(H.MEM_FNM, H.MEM_LNM, H.MEM_ID ) MEM_NAME , (SELECT COUNT(*) FROM ISSUE_REP P WHERE I.ISSUE_NO=P.ISSUE_NO) REP_COUNT
+           , (SELECT MEM_LNM||MEM_FNM  FROM MEM C WHERE C.MEM_ID= O.MEM_ID) OBSERVER_NAME ,
+           F.ISSUE_FILE_NM , F.ISSUE_FILE_CODE , PRJCT_NM
+        FROM
+            ISSUE I INNER JOIN MEM H ON(H.MEM_ID = I.MEM_ID)
+            LEFT OUTER JOIN WORK W ON(I.WORK_CODE = W.WORK_CODE)
+            LEFT OUTER JOIN WORK_CATEGORY C ON(C.CTGRY_CODE = I.CTGRY_CODE)
+            LEFT OUTER JOIN OBSERVER O ON (W.WORK_CODE = O.WORK_CODE)
+            LEFT OUTER JOIN ISSUE_FILE F ON(I.ISSUE_NO = F.ISSUE_NO) 
+            LEFT OUTER JOIN PROJECT P ON (P.PRJCT_NO = I.PRJCT_NO) 
+            WHERE I.PRJCT_NO =#{prjctNo}
+            AND I.ISSUE_NO = #{issueNo}   
+             AND (F.ISSUE_FILE_DEL_AT = '0' OR F.ISSUE_FILE_DEL_AT IS NULL) 
+            ORDER BY ISSUE_RGSDE DESC 
+
+</select>
+
+<sql id="myIssueSearch">
+<if test="simpleSearch != null">
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.issuePriortCode)">
+		AND I.ISSUE_PRIORT_CODE =#{simpleSearch.issuePriortCode}
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.issueSolutAt)">
+		AND I.ISSUE_SOLUT_AT =#{simpleSearch.issueSolutAt}
+		</if>
+	<if test="simpleSearch!=null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.searchWord)">
+	AND
+				<choose>
+					<when test="simpleSearch.searchType eq 'workTitle'">
+						INSTR(work_sj, #{simpleSearch.searchWord}) > 0
+					</when>
+					<when test="simpleSearch.searchType eq 'title'" >
+						INSTR(ISSUE_SJ, #{simpleSearch.searchWord}) > 0
+					</when>
+					<otherwise>
+						(
+							INSTR(work_sj, #{simpleSearch.searchWord}) > 0
+							OR INSTR(ISSUE_SJ, #{simpleSearch.searchWord}) > 0
+						)
+					</otherwise>
+				</choose>
+	
+	</if>
+	</if>
+
+
+</sql>
+
+<select id="selectMyIssueList"  parameterType="kr.or.ddit.work.vo.ExtendPagingVO" resultType="kr.or.ddit.issue.vo.IssueVO">
+SELECT D.*  FROM     
+  (  SELECT B.* , ROWNUM RNUM FROM
+    
+    (    SELECT
+            ISSUE_NO,    ISSUE_SJ,    MAKEDATEFORMAT(ISSUE_RGSDE) ISSUE_RGSDE, W.WORK_SJ , ISSUE_RGSDE REGES , 
+            ISSUE_OTHBC_AT,    ISSUE_CN,    I.WORK_CODE,
+            I.MEM_ID REP_WRITER_ID,    I.PRJCT_NO,    I.CTGRY_CODE, issue_solut_at, case when issue_solut_at =1 then '해결' else '미해결' end solute_Nm ,
+            ISSUE_PRIORT_CODE, (SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CMMN_CODE_DETAIL.CODE_NO =ISSUE_PRIORT_CODE ) prior_Nm,
+            MAKEDATEFORMAT(ISSUE_UPDTDE) ISSUE_UPDTDE , MAKENAMEFORMAT(H.MEM_FNM, H.MEM_LNM, H.MEM_ID ) MEM_NAME , (SELECT COUNT(*) FROM ISSUE_REP P WHERE I.ISSUE_NO=P.ISSUE_NO) REP_COUNT
+        FROM
+            ISSUE I INNER JOIN MEM H ON(H.MEM_ID = I.MEM_ID)
+            LEFT OUTER JOIN WORK W ON(I.WORK_CODE = W.WORK_CODE)
+            LEFT OUTER JOIN WORK_CATEGORY C ON(C.CTGRY_CODE = I.CTGRY_CODE)
+            WHERE I.PRJCT_NO =#{issueVO.prjctNo}
+            AND i.mem_id = #{issueVO.memId}
+            <include refid="myIssueSearch"></include>
+           ORDER BY REGES DESC 
+            ) B
+     ) D
+    WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+
+</select>
+
+<select id="selectMyIssueListCount"  parameterType="kr.or.ddit.work.vo.ExtendPagingVO" resultType="int">
+
+ SELECT COUNT(*)
+	  FROM     ISSUE I INNER JOIN MEM H ON(H.MEM_ID = I.MEM_ID)
+	            LEFT OUTER JOIN WORK W ON(I.WORK_CODE = W.WORK_CODE)
+	            LEFT OUTER JOIN WORK_CATEGORY C ON(C.CTGRY_CODE = I.CTGRY_CODE)
+	            WHERE I.PRJCT_NO =#{issueVO.prjctNo}
+	            AND i.mem_id = #{issueVO.memId}
+	<include refid="myIssueSearch"></include>
+
+</select>
+
+<select id="selectIssueList" parameterType="kr.or.ddit.work.vo.ExtendPagingVO" resultType="kr.or.ddit.issue.vo.IssueVO">
+SELECT D.*  FROM     
+  (  SELECT B.* , ROWNUM RNUM FROM
+    
+    (    SELECT
+            ISSUE_NO,    ISSUE_SJ,    MAKEDATEFORMAT(ISSUE_RGSDE) ISSUE_RGSDE, W.WORK_SJ ,ISSUE_RGSDE REGES,
+            ISSUE_OTHBC_AT,    ISSUE_CN,    I.WORK_CODE,
+            I.MEM_ID REP_WRITER_ID,    I.PRJCT_NO,    I.CTGRY_CODE, issue_solut_at, case when issue_solut_at =1 then '해결' else '미해결' end solute_Nm ,
+            ISSUE_PRIORT_CODE, (SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CMMN_CODE_DETAIL.CODE_NO =ISSUE_PRIORT_CODE ) prior_Nm,
+            MAKEDATEFORMAT(ISSUE_UPDTDE) ISSUE_UPDTDE , MAKENAMEFORMAT(H.MEM_FNM, H.MEM_LNM, H.MEM_ID ) MEM_NAME , (SELECT COUNT(*) FROM ISSUE_REP P WHERE I.ISSUE_NO=P.ISSUE_NO) REP_COUNT
+        FROM
+            ISSUE I INNER JOIN MEM H ON(H.MEM_ID = I.MEM_ID)
+            LEFT OUTER JOIN WORK W ON(I.WORK_CODE = W.WORK_CODE)
+            LEFT OUTER JOIN WORK_CATEGORY C ON(C.CTGRY_CODE = I.CTGRY_CODE)
+            WHERE I.PRJCT_NO =#{issueVO.prjctNo}
+            <include refid="searchFrag"></include>
+            ORDER BY REGES DESC 
+            ) B
+     ) D
+     
+    WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+
+</select>
+<select id="selectIssueListCount" parameterType="kr.or.ddit.work.vo.ExtendPagingVO" resultType="int">
+
+	 SELECT COUNT(*)
+	  FROM     ISSUE I INNER JOIN MEM H ON(H.MEM_ID = I.MEM_ID)
+	            LEFT OUTER JOIN WORK W ON(I.WORK_CODE = W.WORK_CODE)
+	            LEFT OUTER JOIN WORK_CATEGORY C ON(C.CTGRY_CODE = I.CTGRY_CODE)
+	            WHERE I.PRJCT_NO =#{issueVO.prjctNo}
+	<include refid="searchFrag"></include>
+
+</select>
+
+<select id="selectIssueTotalCount" parameterType="String" resultType="int">
+SELECT COUNT(*)
+  FROM
+    ISSUE I
+    LEFT OUTER JOIN WORK_CATEGORY C ON(C.CTGRY_CODE = I.CTGRY_CODE)
+    WHERE I.PRJCT_NO =  #{pCode}
+</select>
+<resultMap type="kr.or.ddit.work.vo.WorkVO" id="WorkDetails" autoMapping="true">
+		<id property="workCode" column="WORK_CODE"/>
+		<collection property="workObserverList" ofType="kr.or.ddit.work.vo.ObserverVO" autoMapping="true">
+				<id property="observerId" column="OBSERVER_ID"/>
+		</collection>
+	</resultMap>
+<select id="selectWorkDetailInfo" parameterType="kr.or.ddit.issue.vo.IssueVO" resultMap="WorkDetails">
+	   SELECT
+		    		MAKENAMEFORMAT(h.MEM_FNM, h.MEM_LNM, h.MEM_ID ) mem_NAMe, h.mem_email,
+ 					A.PRJCT_NO,    A.CTGRY_CODE,    B.CTGRY_NM,
+				    a.WORK_CODE,    WORK_SJ,    WORK_CN,  h.MEM_FNM ,h.MEM_LNM ,
+				    a.MEM_ID,   TO_CHAR(WORK_BGNDE ,'yyyy-mm-dd') WORK_BGNDE, 
+				    TO_CHAR( WORK_ENDDE ,'yyyy-mm-dd') WORK_ENDDE,
+				    TO_CHAR( WORK_RGSDE ,'yyyy-mm-dd') WORK_RGSDE,  
+				    WORK_REQ_STTUS_CODE,  WORK_RETURN_WHY,
+				    NVL( (SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CODE_NO = WORK_REQ_STTUS_CODE),'승인요청전'  ) WORK_Req_Nm
+				    ,    UPPER_WORK_CODE,    WORK_STTUS_CODE,
+				    (SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CODE_NO=WORK_STTUS_CODE ) WORK_STATUS,
+				    WORK_PRIORT_CODE  , O.MEM_ID  OBSERVER_ID
+		FROM
+		   WORK A LEFT OUTER JOIN WORK_CATEGORY B ON(A.CTGRY_CODE = B.CTGRY_CODE)       
+		   RIGHT OUTER JOIN MEM H ON (A.MEM_ID = H.MEM_ID)
+		   LEFT OUTER JOIN WORK_FILE W ON (A.WORK_CODE = W.WORK_CODE)
+		   LEFT OUTER JOIN WORK_BKMK F ON (A.WORK_CODE = F.WORK_CODE)
+           left outer join observer o on (a.work_code = o.work_code)
+		   INNER JOIN PROJECT P ON  (A.PRJCT_NO = P.PRJCT_NO)
+		   WHERE   A.WORK_CODE = #{workCode} 
+		   AND A.PRJCT_NO = #{prjctNo}
+		   AND A.Mem_Id = #{memId}
+		   AND (W.WORK_FILE_DEL_AT = '0' OR W.WORK_FILE_DEL_AT IS NULL) 
+		   AND WORK_OTHBC_AT = '1'
+</select>
+
+
+
+<select id="selectIssuePercent" parameterType="String" resultType="kr.or.ddit.issue.vo.IssueVO">
+ 
+  SELECT
+    C.CTGRY_NM,
+    count(*) issuePercent
+    FROM
+    ISSUE I
+    LEFT OUTER JOIN WORK_CATEGORY C ON(C.CTGRY_CODE = I.CTGRY_CODE)
+    WHERE I.PRJCT_NO =  #{pCode}
+     GROUP BY C.CTGRY_NM, C.CTGRY_CODE
+</select>
+
+<insert id="insertIssue" parameterType="kr.or.ddit.issue.vo.IssueVO">
+<selectKey  order="BEFORE" resultType="String" keyProperty="issueNo" keyColumn="ISSUE_NO">
+	SELECT ISSUE_NO_SEQ.NEXTVAL FROM DUAL
+</selectKey>
+INSERT INTO ISSUE (
+    ISSUE_NO,
+    ISSUE_SJ,
+    ISSUE_RGSDE,
+    ISSUE_CN,
+    WORK_CODE,
+    MEM_ID,
+    PRJCT_NO,
+    CTGRY_CODE,
+    ISSUE_PRIORT_CODE,
+    ISSUE_SOLUT_AT
+) VALUES (
+    #{issueNo,jdbcType=NUMERIC},
+    #{issueSj,jdbcType=VARCHAR},
+    sysdate,
+   	#{issueCn,jdbcType=CLOB},
+	#{workCode,jdbcType=VARCHAR},
+    #{memId,jdbcType=VARCHAR},
+    #{prjctNo,jdbcType=NUMERIC},
+    #{ctgryCode,jdbcType=VARCHAR},
+    #{issuePriortCode,jdbcType=VARCHAR},
+    #{issueSolutAt,jdbcType=CHAR}
+)
+
+</insert>
+	<update id="updatetIssue" parameterType="kr.or.ddit.issue.vo.IssueVO">
+	UPDATE ISSUE
+	    SET
+	       ISSUE_SJ =#{issueSj,jdbcType=VARCHAR}
+	  ,    ISSUE_CN =#{issueCn,jdbcType=CLOB}
+	  ,    ISSUE_PRIORT_CODE = #{issuePriortCode,jdbcType=VARCHAR}
+	  ,    ISSUE_UPDTDE =sysdate
+	  ,    ISSUE_SOLUT_AT = #{issueSolutAt,jdbcType=CHAR}
+	WHERE
+	    ISSUE_NO = #{issueNo,jdbcType=NUMERIC}
+		
+	</update>
+
+	
+	<update id="updateSolute" parameterType="int" >
+			UPDATE ISSUE
+	    SET
+	       ISSUE_SOLUT_AT ='1'
+	        ,    ISSUE_UPDTDE =sysdate
+			<where>
+			  ISSUE_NO = #{issueNo}
+			</where>
+	</update>
+	
+
+	<delete id="deleteIssue" parameterType="String">
+		 DELETE FROM issue
+			WHERE
+			    ISSUE_NO =#{issueNo , jdbcType=VARCHAR}
+	</delete>
+</mapper>

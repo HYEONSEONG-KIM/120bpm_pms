@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.issue.dao.IssueRepDAO">
+
+<select id="selectIssueRepTotalCount"  parameterType="kr.or.ddit.work.vo.ExtendPagingVO" resultType="int">
+SELECT
+		COUNT(*)
+ FROM   ISSUE_REP
+ WHERE ISSUE_NO = #{detailSearch.issueNo}
+ AND PRJCT_NO = #{detailSearch.prjctNo}
+</select>
+
+
+
+<select id="selectIssueRepList" parameterType="kr.or.ddit.work.vo.ExtendPagingVO" resultType="kr.or.ddit.issue.vo.IssueRepVO">
+
+	SELECT D.* FROM (
+		SELECT B.* ,ROWNUM RNUM FROM 
+			(
+					SELECT
+						<![CDATA[
+					  	ISSUE_REP_CN,
+					    MAKEDATEFORMAT(ISSUE_REP_RGSDE) ISSUE_REP_RGSDE,
+					    ISSUE_REP_NO,
+					    PRJCT_NO,
+					    CTGRY_CODE,
+					    WORK_CODE,
+					    ISSUE_NO,
+					    R.MEM_ID REP_WRITER_ID 	,
+					    Lpad('└', 6 * 10* ( LEVEL - 1 ), '&nbsp;' )|| MAKENAMEFORMAT(H.MEM_FNM ,H.MEM_LNM, R.MEM_ID) MEM_NAME,
+					    ISSUE_REP_PARENT,
+					    ISSUE_REP_DELETE_AT
+					  ]]>   
+					FROM
+					    ISSUE_REP R INNER JOIN MEM H ON(R.MEM_ID = H.MEM_ID)
+					    WHERE ISSUE_NO = #{detailSearch.issueNo}
+					    AND PRJCT_NO = #{detailSearch.prjctNo}
+					    START WITH ISSUE_REP_PARENT IS NULL 
+					    CONNECT BY PRIOR ISSUE_REP_NO = ISSUE_REP_PARENT
+					    AND PRIOR R.PRJCT_NO = R.PRJCT_NO
+					   ORDER SIBLINGS BY  ISSUE_REP_RGSDE DESC
+			) B
+		)D
+
+	  WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+</select>
+
+
+<select id="selectIssueDetail" parameterType="kr.or.ddit.issue.vo.IssueRepVO" resultType="kr.or.ddit.issue.vo.IssueRepVO">
+ SELECT
+    issue_rep_cn,
+    issue_rep_rgsde,
+    issue_rep_no,
+    prjct_no,
+    ctgry_code,
+    work_code,
+    issue_no,
+    mem_id,
+    issue_rep_parent
+FROM
+    issue_rep
+    where issue_rep_no = #{issueRepNo}
+
+</select>
+
+<delete id="deleteIssueRep" parameterType="kr.or.ddit.issue.vo.IssueRepVO">
+MERGE INTO ISSUE_REP C 
+  USING (
+    sELECT ISSUE_REP_NO , (SELECT COUNT(*)  FROM ISSUE_REP B WHERE ISSUE_REP_PARENT = A.ISSUE_REP_NO) CNT 
+    FROM ISSUE_REP A
+    WHERE ISSUE_REP_NO =  #{issueRepNo}
+    ) D ON (C.ISSUE_REP_NO =  #{issueRepNo} and  C.ISSUE_REP_NO = D.ISSUE_REP_NO)
+        WHEN MATCHED THEN 
+        UPDATE SET 
+        ISSUE_REP_CN = '삭제된 피드백입니다',
+        ISSUE_REP_DELETE_AT = '1'
+    DELETE WHERE D.CNT = 0
+</delete>
+
+
+<update id="updateIssueRep" parameterType="kr.or.ddit.issue.vo.IssueRepVO">
+	 UPDATE ISSUE_REP
+	    SET
+	      ISSUE_REP_CN =#{issueRepCn ,jdbcType=CLOB}
+	WHERE
+	     ISSUE_REP_NO =#{issueRepNo ,jdbcType=NUMERIC}
+</update>
+
+
+<insert id="insertIssueRep" parameterType="kr.or.ddit.issue.vo.IssueRepVO">
+<selectKey resultType="int" keyProperty="issueRepNo" order="BEFORE">
+	select NVL(Max(ISSUE_REP_NO) , 0) + 1 FROM ISSUE_REP
+</selectKey>
+
+INSERT INTO ISSUE_REP (
+    ISSUE_REP_CN,
+    ISSUE_REP_RGSDE,
+    ISSUE_REP_NO,
+    PRJCT_NO,
+    CTGRY_CODE,
+    WORK_CODE,
+    ISSUE_NO,
+    MEM_ID
+   <if test="issueRepParent != null and  @org.apache.commons.lang3.StringUtils@isNotBlank(issueRepParent)">
+    ,    ISSUE_REP_PARENT
+    </if>
+) VALUES (
+    #{issueRepCn ,jdbcType=CLOB},
+    sysdate,
+    #{issueRepNo ,jdbcType=NUMERIC},
+    #{prjctNo ,jdbcType=NUMERIC},
+    #{ctgryCode ,jdbcType=VARCHAR},
+    #{workCode ,jdbcType=VARCHAR},
+    #{issueNo ,jdbcType=NUMERIC},
+    #{memId,jdbcType=VARCHAR}
+    <if test="issueRepParent != null and  @org.apache.commons.lang3.StringUtils@isNotBlank(issueRepParent)">
+    , #{issueRepParent ,jdbcType=NUMERIC}
+    </if>
+)
+
+
+</insert>
+
+
+</mapper>

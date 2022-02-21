@@ -1,0 +1,15 @@
+--<tr>
+--			<th>회원아이디</th>
+--			<td><%=member.getMem_id() %></td>
+--		</tr>
+SELECT '<tr><th>'||COMMENTS||
+    '</th><td>'||
+    '<%='||LOWER(B.TABLE_NAME)||
+    '.get'||SUBSTR(B.COLUMN_NAME, 1, 1)||
+    SUBSTR(LOWER(B.COLUMN_NAME), 2)||
+    '() %></td></tr>'
+FROM user_col_comments A 
+    RIGHT OUTER JOIN COLS B 
+    ON (A.TABLE_NAME = B.TABLE_NAME 
+        AND A.COLUMN_NAME = B.COLUMN_NAME)
+WHERE B.TABLE_NAME = 'MEMBER';

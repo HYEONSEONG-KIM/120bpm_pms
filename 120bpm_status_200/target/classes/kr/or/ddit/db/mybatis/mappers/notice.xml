@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.notice.dao.NoticeDAO">
+
+<sql id="search">
+		<where>
+			<if test="simpleSearch!=null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.searchWord)">
+				<choose>
+					<when test ="simpleSearch.searchType eq 'noticeSj'">
+						INSTR(NOTICE_SJ, #{simpleSearch.searchWord} ) > 0 
+					</when>
+					<when  test = "simpleSearch.searchType eq 'noticeCn'">
+					    INSTR(NOTICE_CN, #{simpleSearch.searchWord}) > 0
+					</when>
+					<when  test = "simpleSearch.searchType eq 'memId'">
+					    INSTR(MEM_ID, #{simpleSearch.searchWord}) > 0
+					</when>
+								
+				<otherwise>
+				INSTR(NOTICE_SJ, #{simpleSearch.searchWord}) > 0 
+				OR INSTR(NOTICE_CN, #{simpleSearch.searchWord}) > 0
+				OR INSTR(MEM_ID, #{simpleSearch.searchWord}) > 0
+				</otherwise>
+				</choose> 
+			</if>
+		</where>
+</sql>
+<select id="selectTotalRecord" parameterType="kr.or.ddit.notice.vo.NoticeVO" resultType="int">
+		SELECT COUNT(*)
+		FROM NOTICE
+		<include refid="search"></include>
+</select>
+
+<select id="selectNoticeList" parameterType="kr.or.ddit.notice.vo.NoticePagingVO" resultType="kr.or.ddit.notice.vo.NoticeVO">
+  SELECT B.*
+		FROM (
+			SELECT A.*, ROWNUM RNUM , (SELECT COUNT(NOTICE_RGSDE) FROM NOTICE WHERE NOTICE_RGSDE = TO_CHAR(SYSDATE, 'YYYY-MM-DD')) TODAY
+			FROM  (		
+				SELECT NOTICE_CODE, NOTICE_SJ, 
+				TO_CHAR(NOTICE_RGSDE, 'YYYY-MM-DD') 
+				NOTICE_RGSDE,
+		        NOTICE_RDCNT
+		        FROM NOTICE 
+				<include refid="search" /> ORDER BY TO_NUMBER(NOTICE_CODE) DESC
+			)   A 
+		)  B 
+			WHERE RNUM BETWEEN #{startRow} AND #{endRow} 
+ 		    ORDER BY TO_NUMBER(NOTICE_CODE) DESC
+ 			       		
+</select>
+
+<resultMap type="kr.or.ddit.notice.vo.NoticeVO" id="noticeMap" autoMapping="true">
+	<id property="noticeCode" column="NOTICE_CODE" />
+	<collection property="noticeFileList" ofType="kr.or.ddit.notice.vo.NoticeFileVO" autoMapping="true">
+		<id property="noticeFileCode" column="NOTICE_FILE_CODE" />
+	</collection>
+</resultMap>
+<select id="selectNotice" parameterType="int" resultMap="noticeMap" >
+<!-- 게시글 상세조회 -->
+  SELECT A.NOTICE_CODE, A.NOTICE_SJ, A.NOTICE_CN, TO_CHAR(A.NOTICE_RGSDE, 'YYYY-MM-DD') NOTICE_RGSDE, 
+  A.NOTICE_RDCNT, A.MEM_ID, B.NOTICE_FILE_NM, B.NOTICE_FILE_CODE 
+  FROM NOTICE A LEFT JOIN NOTICE_FILE B ON (A.NOTICE_CODE = B.NOTICE_CODE) 
+  WHERE A.NOTICE_CODE = #{noticeCode}
+</select>
+
+
+<update id="incrementHit" parameterType="int">
+	UPDATE NOTICE
+	SET NOTICE_RDCNT = NOTICE_RDCNT + 1
+	WHERE NOTICE_CODE = #{noticeCode}
+</update>
+
+<delete id="deleteNoticeInfo" parameterType="String">
+	<!-- 게시글 삭제 -->
+	DELETE
+		FROM NOTICE
+	WHERE NOTICE_CODE = #{noticeCode}
+</delete>
+
+<insert id="insertNotice" parameterType="kr.or.ddit.notice.vo.NoticeVO">
+<!-- 게시글 추가 -->
+	<selectKey resultType="string" keyProperty="noticeCode" order="BEFORE">
+		SELECT MAX(TO_NUMBER(NOTICE_CODE))+1 FROM NOTICE
+	</selectKey>
+	INSERT INTO 
+		NOTICE(NOTICE_CODE, NOTICE_SJ, NOTICE_CN, MEM_ID, NOTICE_RGSDE, NOTICE_RDCNT)  VALUES	 
+				(#{noticeCode,jdbcType=VARCHAR},
+				 #{noticeSj,jdbcType=VARCHAR},
+				 #{noticeCn,jdbcType=CLOB},
+				 'admin',
+				 to_char(SYSDATE,'YYYY-MM-DD'),
+				  0)
+				
+</insert>
+	
+
+
+<update id="updateNotice" parameterType="kr.or.ddit.notice.vo.NoticeVO">
+ 	<!-- 사용자가 update 하는 것 --> 
+	UPDATE NOTICE
+ 		SET 	NOTICE_SJ =#{noticeSj},
+		   	    NOTICE_CN =#{noticeCn}
+		 WHERE  NOTICE_CODE = #{noticeCode}
+	</update>
+
+<!-- <update id="selectNoticeDetailView" parameterType="kr.or.ddit.notice.vo.NoticeVO" > -->
+	<!-- 사용자가 update 하는 것 --> 
+<!-- 	UPDATE NOTICE -->
+<!--  		SET 	NOTICE_SJ =#{noticeSj}, -->
+<!-- 		   	    NOTICE_CN =#{noticeCn} -->
+<!-- 		 WHERE  NOTICE_CODE = #{noticeCode} -->
+<!-- 	</update> -->
+<select id="selectNoticeDetailView" parameterType="kr.or.ddit.notice.vo.NoticeVO" resultMap="noticeMap" >
+  SELECT A.NOTICE_CODE, A.NOTICE_SJ, A.NOTICE_CN, TO_CHAR(A.NOTICE_RGSDE, 'YYYY-MM-DD') NOTICE_RGSDE, 
+  A.NOTICE_RDCNT, A.MEM_ID, B.NOTICE_FILE_NM, B.NOTICE_FILE_CODE 
+  FROM NOTICE A LEFT JOIN NOTICE_FILE B ON (A.NOTICE_CODE = B.NOTICE_CODE) 
+  WHERE A.NOTICE_CODE = #{noticeCode}
+</select>
+</mapper>
+

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.work.dao.CntcWorkDAO">
+
+
+	<select id="checkCntAt" resultType="int" parameterType="kr.or.ddit.work.vo.CntcWorkVO">
+	 SELECT
+    		COUNT(*)
+     FROM
+     CNTCWORK A  INNER JOIN WORK B ON(A.WORK_CODE1 = B.WORK_CODE)
+		     WHERE (WORK_CODE1 = #{workCode1} AND WORK_CODE2=#{workCode2})
+		     OR (WORK_CODE1 = #{workCode2} AND WORK_CODE2=#{workCode1})   
+	</select>
+
+	<resultMap type="kr.or.ddit.work.vo.CntcWorkVO" id="" autoMapping="true">
+			<id column="WORK_CODE1" property="workCode1"/>
+			<id column="WORK_CODE2" property="workCode2"/>
+	</resultMap>	
+
+	<select id="selectCntcWorkList" parameterType="String" resultMap="">
+	SELECT
+		    WORK_CODE1,
+		    WORK_CODE2,
+		    A.PRJCT_NO,
+		    (SELECT WORK_SJ FROM WORK C WHERE WORK_CODE = WORK_CODE1) FILE_NAME1 ,
+		    (SELECT WORK_SJ FROM WORK C WHERE WORK_CODE = WORK_CODE2) FILE_NAME2,
+		    (SELECT H.MEM_LNM || H.MEM_FNM     FROM WORK C INNER JOIN MEM H ON (C.MEM_ID  = H.MEM_ID) WHERE WORK_CODE = WORK_CODE1) WORK_MEM1,
+		    (SELECT H.MEM_LNM || H.MEM_FNM     FROM WORK C INNER JOIN MEM H ON (C.MEM_ID  = H.MEM_ID) WHERE WORK_CODE = WORK_CODE2) WORK_MEM2
+	FROM
+		    CNTCWORK A  INNER JOIN WORK B ON(A.WORK_CODE1 = B.WORK_CODE)
+		    WHERE (WORK_CODE1 =#{workCode1})  OR (WORK_CODE2 = #{workCode1}) 
+	</select>
+
+</mapper>

@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!DOCTYPE tiles-definitions PUBLIC
+       "-//Apache Software Foundation//DTD Tiles Configuration 3.0//EN"
+       "http://tiles.apache.org/dtds/tiles-config_3_0.dtd">
+<tiles-definitions>
+  <definition name="abstractParent" template="/WEB-INF/views/template.jsp">
+    <put-attribute name="preScript" value="/includee/preScript.jsp" />
+    <put-attribute name="headerMenu" value="/includee/headerMenu.jsp" />
+    <put-attribute name="leftMenu" value="/includee/leftMenu.jsp" />
+    <put-attribute name="footer" value="/includee/footer.jsp" />
+  </definition>
+  <definition name="MyAbstractParent" template="/WEB-INF/views/MyTemplate.jsp">
+    <put-attribute name="preScript" value="/includee/preScript.jsp" />
+    <put-attribute name="headerMenu" value="/includee/headerMenu.jsp" />
+    <put-attribute name="MyLeftMenu" value="/includee/MyLeftMenu.jsp" />
+    <put-attribute name="footer" value="/includee/footer.jsp" /> 
+  </definition> 
+  <definition name="PrjctAbstractParent" template="/WEB-INF/views/PrjctTemplate.jsp">
+    <put-attribute name="preScript" value="/includee/preScript.jsp" />
+    <put-attribute name="PrjctLeftMenu" value="/includee/projectLeftMenu.jsp" />
+    <put-attribute name="footer" value="/includee/footer.jsp" /> 
+  </definition> 
+
+ 
+   <definition name="login/loginForm"  template="/login/loginForm.jsp"> 
+  </definition>    
+   
+<!-- //// userMain/adminMain template //////////////////////////////////////////////////// --> 
+   <definition name="main/*" extends="abstractParent" > 
+    <put-attribute name="content" value="/WEB-INF/views/main/{1}.jsp" />  
+  </definition>   
+   
+  <definition name="notice/*" extends="abstractParent" > 
+    <put-attribute name="content" value="/WEB-INF/views/notice/{1}.jsp" />  
+  </definition>   
+   
+   <definition name="admin/*" extends="abstractParent" > 
+    <put-attribute name="content" value="/WEB-INF/views/admin/{1}.jsp" />  
+  </definition>  
+  
+   <definition name="member/entireMemberList" extends="abstractParent" > 
+    <put-attribute name="content" value="/WEB-INF/views/member/entireMemberList.jsp" />  
+  </definition>  
+  
+  
+   <definition name="settings/*" extends="abstractParent" >  
+    <put-attribute name="content" value="/WEB-INF/views/settings/{1}.jsp" />  
+  </definition>  
+  
+   <definition name="security/*" extends="abstractParent" > 
+    <put-attribute name="content" value="/WEB-INF/views/security/{1}.jsp" />  
+  </definition>   
+  
+  <definition name="accept/*" extends="abstractParent" >  
+    <put-attribute name="content" value="/WEB-INF/views/accept/{1}.jsp" />  
+  </definition>
+     
+  <definition name="adminProject/*" extends="abstractParent" >  
+    <put-attribute name="content" value="/WEB-INF/views/adminProject/{1}.jsp" />  
+  </definition>
+     
+  
+    
+ <!-- //// projectMain template //////////////////////////////////////////////////// --> 
+     <definition name="project/*" extends="PrjctAbstractParent" > 
+    <put-attribute name="content" value="/WEB-INF/views/project/{1}.jsp" />  
+  </definition>    
+ 
+   <definition name="work/*" extends="PrjctAbstractParent" >  
+    <put-attribute name="content" value="/WEB-INF/views/work/{1}.jsp" />  
+  </definition>   
+  
+   <definition name="template/*" extends="PrjctAbstractParent" > 
+    <put-attribute name="content" value="/WEB-INF/views/template/{1}.jsp" />  
+  </definition>  
+   
+   <definition name="minutes/*" extends="PrjctAbstractParent" > 
+    <put-attribute name="content" value="/WEB-INF/views/minutes/{1}.jsp" />  
+  </definition>  
+  
+   <definition name="issue/*" extends="PrjctAbstractParent" > 
+    <put-attribute name="content" value="/WEB-INF/views/issue/{1}.jsp" />  
+  </definition>  
+  
+   <definition name="file/*" extends="PrjctAbstractParent" > 
+    <put-attribute name="content" value="/WEB-INF/views/file/{1}.jsp" />  
+  </definition>   
+   
+  <definition name="wiki/*" extends="PrjctAbstractParent" >  
+    <put-attribute name="content" value="/WEB-INF/views/wiki/{1}.jsp" />  
+  </definition>   
+  
+   <definition name="activity/*" extends="PrjctAbstractParent" >  
+    <put-attribute name="content" value="/WEB-INF/views/activity/{1}.jsp" />  
+  </definition>   
+  
+   <definition name="projectSetting/*" extends="PrjctAbstractParent" >  
+    <put-attribute name="content" value="/WEB-INF/views/projectSetting/{1}.jsp" />  
+  </definition>   
+  
+   <definition name="chatting/*" extends="PrjctAbstractParent" >  
+    <put-attribute name="content" value="/WEB-INF/views/chatting/{1}.jsp" />  
+  </definition>   
+  
+   <definition name="news/*" extends="PrjctAbstractParent" >  
+    <put-attribute name="content" value="/WEB-INF/views/news/{1}.jsp" />  
+  </definition>    
+  
+   <definition name="freeboard/*" extends="PrjctAbstractParent" >  
+    <put-attribute name="content" value="/WEB-INF/views/freeboard/{1}.jsp" />  
+  </definition>   
+   
+  <definition name="calendar/*" extends="PrjctAbstractParent" >  
+    <put-attribute name="content" value="/WEB-INF/views/calendar/{1}.jsp" />  
+  </definition>   
+  
+  <definition name="webIDE/*" extends="PrjctAbstractParent" >  
+    <put-attribute name="content" value="/WEB-INF/views/webIDE/{1}.jsp" />  
+  </definition>   
+  
+  <definition name="user/*" extends="PrjctAbstractParent" >  
+    <put-attribute name="content" value="/WEB-INF/views/user/{1}.jsp" />  
+  </definition>   
+  
+<!-- //// mypage template //////////////////////////////////////////////////// --> 
+  <definition name="mypage/*" extends="MyAbstractParent" >  
+    <put-attribute name="content" value="/WEB-INF/views/mypage/{1}.jsp" />  
+  </definition>   
+   
+  
+   <!-- test -->
+  <definition name="test" extends="abstractParent" >  
+    <put-attribute name="content" value="/WEB-INF/views/test.jsp" />  
+  </definition>   
+  
+<!--   <definition name="index" extends="abstractParent"> -->
+<!--   	<put-attribute name="content" expression="${contentsPage}"/> -->
+<!--   </definition> -->
+</tiles-definitions>   
+
+
+
+
+

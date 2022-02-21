@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.main.dao.MyProjectsDAO">
+
+	<select id="totalRecord" parameterType="kr.or.ddit.makeProject.vo.MakeProjectPagingVO" resultType="int">
+		SELECT COUNT(*) 
+		FROM(
+    	SELECT DISTINCT A.PRJCT_NO
+		<include refid="projectSearch"/>
+	</select>
+
+	<resultMap type="kr.or.ddit.makeProject.vo.MakeProjectVO" id="prjctMap" >
+		<id property="prjctNo" column="PRJCT_NO" />
+		<result property="prjctNm" column="PRJCT_NM" />
+		<result property="sumry" column="SUMRY" />
+		<result property="prjctBeginde" column="PRJCT_BEGINDE" />
+		<result property="prjctEndde" column="PRJCT_ENDDE" />
+		<result property="memCnt" column="MEM_CNT" />
+		<result property="upperPrjctNo" column="UPPER_PRJCT_NO" />
+		<result property="prjctOrnt" column="PRJCT_ORNT" />
+		<result property="bsnssclae" column="BSNSSCLAE" />
+		<collection property="projectMemList" ofType="kr.or.ddit.accept.vo.ProjectMemVO">
+			<id property="memId" column="MEM_ID" />
+			<id property="prjctNo" column="PRJCT_NO" />
+			<result property="memName" column="MEM_NAME" />
+		</collection>
+	</resultMap>
+	<select id="selectProjectList" parameterType="kr.or.ddit.makeProject.vo.MakeProjectPagingVO" resultMap="prjctMap">
+		SELECT B.* 
+		FROM(
+		    SELECT ROWNUM RNUM, A.*, (CASE WHEN AUTHOR IS NULL THEN '없음' ELSE  MAKENAMEFORMAT(MEM_FNM, MEM_LNM, A.MEM_ID) END) MEM_NAME
+		<include refid="projectSearch"/>
+		WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	
+	</select>
+	
+	<sql id="projectSearch">
+		    FROM(
+		        SELECT
+		            P.PRJCT_NO, PRJCT_NM,SUMRY, AUTHOR,MEM_ID, TO_CHAR(PRJCT_BEGINDE, 'YYYY-MM-DD') PRJCT_BEGINDE,
+		            TO_CHAR(PRJCT_ENDDE, 'YYYY-MM-DD') PRJCT_ENDDE,
+		            UPPER_PRJCT_NO, PRJCT_RGSDE, PRJCT_ORNT, BSNSSCLAE  ,(SELECT COUNT(*) FROM PROJECT_MEM WHERE PRJCT_NO=P.PRJCT_NO AND AUTHOR!='ROLE_OB') MEM_CNT
+		        FROM PROJECT P LEFT OUTER JOIN ( SELECT PRJCT_NO, MEM_ID, AUTHOR, COUNT(*) FROM PROJECT_MEM WHERE AUTHOR = 'ROLE_PM' 
+		                                            GROUP BY PRJCT_NO, MEM_ID, AUTHOR )M ON(P.PRJCT_NO=M.PRJCT_NO)
+		        WHERE DELET_STATE = '0'
+				<if test="checkDate eq 'proceeding'">
+					<![CDATA[
+					AND PRJCT_BEGINDE <= SYSDATE
+					AND PRJCT_ENDDE >= SYSDATE
+					]]>
+				</if>
+			
+				<if test="checkDate eq 'end'">
+					<![CDATA[
+						AND PRJCT_ENDDE < SYSDATE
+					]]>
+				</if>
+				<if test="simpleSearch!=null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.searchWord)">
+					<choose>
+						<when test="simpleSearch.searchType eq 'prtTitle'">
+							AND INSTR(PRJCT_NM, #{simpleSearch.searchWord}) > 0
+						</when>
+			
+						<when test="simpleSearch.searchType eq 'ornt'">
+							AND INSTR(PRJCT_ORNT, #{simpleSearch.searchWord}) > 0
+						</when>
+			
+						<otherwise>
+							AND 
+							(
+							INSTR(PRJCT_NM, #{simpleSearch.searchWord}) > 0
+							OR INSTR(PRJCT_ORNT, #{simpleSearch.searchWord}) > 0
+							)
+						</otherwise>
+					</choose>
+				</if>		
+		        ORDER BY PRJCT_ENDDE 
+		    ) A LEFT OUTER JOIN MEM MM ON(A.MEM_ID=MM.MEM_ID)
+		        INNER JOIN (SELECT PRJCT_NO FROM PROJECT_MEM WHERE MEM_ID = #{memId}) MI ON(A.PRJCT_NO=MI.PRJCT_NO)
+		)B
+	</sql>
+</mapper>

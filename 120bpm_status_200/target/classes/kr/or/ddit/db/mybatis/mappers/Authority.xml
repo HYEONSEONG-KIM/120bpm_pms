@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.security.dao.AuthorityDAO">
+
+	<select id="roleHierarchy" resultType="string">
+		SELECT CHLDRN_ROLE || '>' || PARENT_ROLE
+		FROM AUTHOR_SCLSRT
+		START WITH CHLDRN_ROLE = 'ROLE_ADMIN'
+		CONNECT BY PRIOR PARENT_ROLE = CHLDRN_ROLE
+	</select>
+
+	<select id="selectAllRole" resultType="kr.or.ddit.security.vo.AuthorityVO">
+			SELECT  AUTHOR,
+			    AUTHOR_NM,
+			    AUTHOR_DC,
+			    TO_CHAR(AUTHOR_CREATDE,'YY/MM/DD') AUTHOR_CREATDE,
+			    TO_CHAR(AUTHOR_UPDTDE,'YY-MM-DD') AUTHOR_UPDTDE,
+			    PROJECT_ROLE_CNT(AUTHOR) PROJECT_CNT
+			FROM ROLE 
+			WHERE AUTHOR LIKE 'ROLE_%' AND AUTHOR != 'ROLE_ADMIN'
+	</select>
+	
+	<select id="selectRole" parameterType="string" resultType="kr.or.ddit.security.vo.AuthorityVO">
+			SELECT AUTHOR,
+				AUTHOR_NM,
+				AUTHOR_DC,
+				TO_CHAR(AUTHOR_CREATDE,'YY/MM/DD') AUTHOR_CREATDE,
+				TO_CHAR(AUTHOR_UPDTDE,'YY-MM-DD') AUTHOR_UPDTDE,
+				PROJECT_ROLE_CNT(AUTHOR) PROJECT_CNT
+			FROM ROLE
+				WHERE AUTHOR LIKE 'ROLE_%' AND AUTHOR != 'ROLE_ADMIN'
+				AND AUTHOR = #{roleId}
+	</select>
+	
+	<insert id="insertRole" parameterType="kr.or.ddit.security.vo.AuthorityVO">
+			INSERT INTO role (
+				AUTHOR,
+				AUTHOR_NM,
+				AUTHOR_DC,
+				AUTHOR_CREATDE,
+				AUTHOR_UPDTDE
+			) VALUES (
+			#{author,jdbcType=VARCHAR},
+			#{authorNm,jdbcType=VARCHAR},
+			#{authorDc,jdbcType=VARCHAR},
+			SYSDATE,
+			#{authorUpdtde,jdbcType=DATE}
+			)
+	</insert>
+	
+	<select id="autorCheck"  parameterType="string" resultType="kr.or.ddit.security.vo.AuthorityVO">
+		SELECT * FROM ROLE
+		WHERE AUTHOR_NM = #{authNm}
+	</select>
+	
+	<delete id="deleteRole" parameterType="string">
+		DELETE FROM ROLE
+		WHERE AUTHOR = #{authId}
+	</delete>
+	
+	
+	<select id="authProjectCnt" resultType="kr.or.ddit.security.vo.AuthorityVO">
+			WITH AUTHORS AS(
+				SELECT
+				DISTINCT
+				B.author,
+				prjct_no
+				FROM
+				project_mem A RIGHT OUTER JOIN ROLE B ON (A.AUTHOR = B.author)
+			),
+			ROLES AS(
+				SELECT
+				author,
+				author_nm
+				FROM
+				role
+				WHERE AUTHOR LIKE 'ROLE_%' AND AUTHOR != 'ROLE_ADMIN'
+			)
+			SELECT R.author,R.author_nm, COUNT(T.prjct_no) PROJECT_CNT
+			FROM ROLES R LEFT OUTER JOIN AUTHORS T ON (R.author = T.author)
+			GROUP BY R.author,R.author_nm
+	</select>
+	
+	<select id="totalProject" resultType="int">
+		SELECT COUNT(*)
+		FROM PROJECT where PRJCT_ENDDE > sysdate
+	</select>
+</mapper>

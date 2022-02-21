@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.scheduled.dao.ScheduledDAO">
+	<select id="selectPrtList" resultType="kr.or.ddit.makeProject.vo.MakeProjectVO">
+		SELECT
+			PRJCT_NO, PRJCT_BEGINDE, TO_CHAR(PRJCT_ENDDE,'YY-MM-DD') PRJCT_ENDDE
+		FROM
+			PROJECT
+	</select>
+
+	<select id="selectEndPrtMemList" parameterType="list" resultType="kr.or.ddit.accept.vo.ProjectMemVO">
+		
+			SELECT
+				MEM_ID, A.PRJCT_NO, B.PRJCT_NM, A.AUTHOR, TO_CHAR(CREATEDE,'YYYY-MM-DD') CREATEDE,
+				NVL(MEM_WORK_AVG(MEM_ID,A.PRJCT_NO),0) AVG_WORK,C.AUTHOR_NM
+			FROM
+				PROJECT_MEM A LEFT OUTER JOIN PROJECT B ON(A.PRJCT_NO = B.PRJCT_NO)
+				LEFT OUTER JOIN ROLE C ON(A.AUTHOR = C.AUTHOR)
+			WHERE A.PRJCT_NO IN
+		<foreach collection="prtNoList" item="prtNo" separator="," open="(" close=")">
+			#{prtNo}
+		</foreach>
+	</select>
+	
+	<resultMap type="kr.or.ddit.scheduled.vo.PrtMemUpdateVO" id="memUpdate" autoMapping="true">
+		<id column="PRJCT_NO" property="prjctNo"/>
+		<collection property="memId" javaType="java.util.List" ofType="kr.or.ddit.accept.vo.ProjectMemVO" autoMapping="true">
+			<id column="MEM_ID" property="memId"/>
+		</collection>
+	</resultMap>
+	
+	<select id="updateMemList" parameterType="list" resultMap="memUpdate">
+		
+			SELECT
+				MEM_ID, A.PRJCT_NO, B.PRJCT_NM, A.AUTHOR, TO_CHAR(CREATEDE,'YYYY-MM-DD') CREATEDE,
+				NVL(MEM_WORK_AVG(MEM_ID,A.PRJCT_NO),0) AVG_WORK,C.AUTHOR_NM
+			FROM
+				PROJECT_MEM A LEFT OUTER JOIN PROJECT B ON(A.PRJCT_NO = B.PRJCT_NO)
+				LEFT OUTER JOIN ROLE C ON(A.AUTHOR = C.AUTHOR)
+			WHERE A.PRJCT_NO IN
+		<foreach collection="prtNoList" item="prtNo" separator="," open="(" close=")">
+			#{prtNo}
+		</foreach>
+	</select>
+	
+	<insert id="insertEndPrtMem" parameterType="list">
+		INSERT ALL
+		<foreach collection="endPrtMemList" item="endPrtMem">
+			INTO END_PRT_MEM 
+				VALUES (
+			#{endPrtMem.memId,jdbcType=VARCHAR},
+			#{endPrtMem.prjctNo,jdbcType=NUMERIC},
+			#{endPrtMem.author,jdbcType=VARCHAR},
+			TO_DATE(#{endPrtMem.createde,jdbcType=DATE},'YYYY-MM-DD'),
+			#{endPrtMem.avgWork,jdbcType=NUMERIC},
+			#{endPrtMem.authorNm,jdbcType=VARCHAR}
+			)
+		</foreach>
+		SELECT * FROM DUAL
+	</insert>
+	
+	<update id="updateEndPrtMem" parameterType="list">
+	
+		UPDATE PROJECT_MEM
+		SET
+			AUTHOR = 'ROLE_OB'
+		WHERE
+			prjct_no IN
+		<foreach collection="updateMemList" item="updateMem" separator=","  open="(" close=")">
+			#{updateMem.prjctNo}
+		</foreach>
+		AND mem_id IN (
+		<foreach collection="updateMemList" item="updateMem" separator=",">
+		
+			<foreach collection="updateMem.memId" item="memIdList" separator="," >
+			 	#{memIdList.memId}
+			</foreach>
+		
+		</foreach>
+		)
+	</update>
+</mapper>
+

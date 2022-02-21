@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.member.dao.MemberDAO">
+
+	
+	<sql id="search">
+		<where>
+			<if test="simpleSearch!=null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.searchWord)">
+				<choose>
+					<when test ="simpleSearch.searchType eq 'id'">
+						INSTR(MEM_ID, #{simpleSearch.searchWord}) > 0 
+					</when>
+					<when test = "simpleSearch.searchType eq 'nm'">
+					    INSTR(MEM_NM, #{simpleSearch.searchWord}) > 0
+					</when>
+					<when  test = "simpleSearch.searchType eq 'hp'">
+					    INSTR(MEM_HP, #{simpleSearch.searchWord}) > 0
+					</when>
+					<when  test = "simpleSearch.searchType eq 'email'">
+					    INSTR(MEM_EMAIL, #{simpleSearch.searchWord}) > 0
+					</when>
+					<when  test = "simpleSearch.searchType eq 'addr1'">
+					    INSTR(MEM_ADDR1, #{simpleSearch.searchWord}) > 0
+					</when>
+					<when  test = "simpleSearch.searchType eq 'memjoinde'">
+					    INSTR(MEM_JOIN_DE, #{simpleSearch.searchWord}) > 0
+					</when>										
+				<otherwise>
+				INSTR(MEM_ID, #{simpleSearch.searchWord}) > 0 
+				OR INSTR(MEM_NM, #{simpleSearch.searchWord}) > 0
+				OR INSTR(MEM_HP, #{simpleSearch.searchWord}) > 0
+				OR INSTR(MEM_EMAIL, #{simpleSearch.searchWord}) > 0
+				OR INSTR(MEM_ADDR1, #{simpleSearch.searchWord}) > 0
+				OR INSTR(MEM_JOIN_DE, #{simpleSearch.searchWord}) > 0
+				</otherwise>
+				</choose>
+			</if>
+		</where>
+	</sql>
+	
+	
+	<select id="selectTotalRecord" parameterType="kr.or.ddit.member.vo.PagingVO" resultType="int">
+			SELECT COUNT(*)
+			FROM MEM
+			<include refid="search"></include>
+	</select>
+	
+	<select id="selectMemberList" resultType="kr.or.ddit.member.vo.MemberVO" parameterType="kr.or.ddit.member.vo.PagingVO">
+		SELECT B.*
+		FROM (
+			SELECT A.*, ROWNUM RNUM
+			FROM  (
+				select MEM_ID, MEM_FNM, MEM_LNM,   MEM_HP, MEM_EMAIL, MEM_ADDR1,MEM_JOIN_DE, MEM_LAST_LOGIN_DE from MEM
+				<include refid="search" />
+				ORDER BY ROWID DESC
+			)   A 
+		)  B 
+		<![CDATA[
+			WHERE RNUM >= #{startRow} AND RNUM <= #{endRow}   
+ 		]]>              
+	</select>
+
+
+	<select id="selectMemberById" parameterType="string" resultType="kr.or.ddit.member.vo.MemberVO">
+		SELECT * FROM MEM WHERE MEM_ID = #{mem_id}
+	</select>
+	
+	
+<!-- <select id="selectMemberList" parameterType="kr.or.ddit.member.vo.MemberVO" resultType="kr.or.ddit.member.vo.PagingVO"> -->
+<!-- WITH MEMALL AS( -->
+<!-- select MEM_ID,  MEM_NM,  MEM_HP, MEM_EMAIL, MEM_ADDR1,MEM_JOIN_DE, MEM_LAST_LOGIN_DE from MEM -->
+
+<!-- ) -->
+<!-- SELECT A.* -->
+<!-- 		FROM ( -->
+<!-- 		    SELECT ROWNUM RNUM, MEMALL.* -->
+<!-- 		    FROM MEMALL -->
+<!-- 		    <include refid="search" /> -->
+<!-- 		) A -->
+<!-- 		WHERE RNUM BETWEEN #{startRow} AND #{endRow} -->
+		
+<!-- </select> -->
+
+
+<insert id="insertMember" parameterType="kr.or.ddit.member.vo.MemberVO">
+		INSERT INTO MEM (MEM_ID,MEM_PASS,MEM_HP,MEM_EMAIL,MEM_ZIP,MEM_ADDR1,MEM_ADDR2,MEM_FNM,
+						MEM_LNM,PROFL_IMG_NM,MEM_STTUS_CL_CODE,MNGR_AT) VALUES
+		(
+		#{memId,jdbcType=VARCHAR}, 
+		#{memPass,jdbcType=VARCHAR}, 
+		#{memHp,jdbcType=VARCHAR}, 
+		#{memEmail,jdbcType=VARCHAR}, 
+		#{memZip,jdbcType=VARCHAR}, 
+		#{memAddr1,jdbcType=VARCHAR}, 
+		#{memAddr2,jdbcType=VARCHAR}, 
+		#{memFnm,jdbcType=VARCHAR},
+		#{memLnm,jdbcType=VARCHAR},
+		'noimg.jpg',
+		'M00101', '0'
+		)
+</insert>
+
+
+	<insert id="insertCareers" parameterType="java.util.ArrayList">
+		<selectKey resultType="int" keyProperty="startAttNo" order="BEFORE">
+			SELECT NVL(MAX(CAREER_MATTER_NO), 0) + 1 FROM CAREER_MATTER
+		</selectKey>
+		INSERT ALL
+		<foreach collection="list" item="career" index="idx">
+		INTO CAREER_MATTER VALUES	 
+					(#{startAttNo}+#{idx},
+					#{career.partcptnBiz,jdbcType=VARCHAR}, 
+					#{career.beginde,jdbcType=DATE},
+					#{career.endde,jdbcType=DATE},
+					#{career.orntNm,jdbcType=VARCHAR}, 
+					#{career.wrkplcNm,jdbcType=VARCHAR}, 
+					#{career.ofcpsNm,jdbcType=VARCHAR}, 
+					#{career.atndDu,jdbcType=VARCHAR}, 
+					#{career.memId,jdbcType=VARCHAR})
+					
+				</foreach>
+		SELECT * FROM DUAL
+	</insert>
+	
+	
+</mapper>

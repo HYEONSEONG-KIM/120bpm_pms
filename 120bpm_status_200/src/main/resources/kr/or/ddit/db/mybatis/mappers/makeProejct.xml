@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.makeProject.dao.MakeProjectDAO">
+	
+	<sql id="projectSearch">
+	
+		<trim prefix="WHERE" prefixOverrides="AND">
+			delet_state = '0'
+			
+			<if test="checkDate eq 'proceeding'">
+				AND PRJCT_ENDDE > SYSDATE
+			</if>
+		
+			<if test="checkDate eq 'end'">
+				<![CDATA[
+					AND PRJCT_ENDDE <= SYSDATE
+				]]>
+			</if>
+			
+				<if test="simpleSearch!=null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.searchWord)">
+					<choose>
+					<when test="simpleSearch.searchType eq 'prtTitle'">
+						AND INSTR(PRJCT_NM, #{simpleSearch.searchWord}) > 0
+					</when>
+
+					<when test="simpleSearch.searchType eq 'name'">
+						AND INSTR(mem_lnm || mem_fnm, #{simpleSearch.searchWord}) > 0
+					</when>
+
+					<when test="simpleSearch.searchType eq 'ornt'">
+						AND INSTR(PRJCT_ORNT, #{simpleSearch.searchWord}) > 0
+					</when>
+
+					<otherwise>
+						AND
+						INSTR(PRJCT_NM, #{simpleSearch.searchWord}) > 0
+						OR INSTR(PRJCT_ORNT, #{simpleSearch.searchWord}) > 0
+					</otherwise>
+				</choose>
+			</if>		
+		</trim>
+	</sql>
+	
+	<select id="totalRecord" parameterType="kr.or.ddit.makeProject.vo.MakeProjectPagingVO" resultType="int">
+		SELECT COUNT(*) FROM PROJECT
+		<include refid="projectSearch"/>
+	</select>
+	
+	
+	<select id="selectProjectList" parameterType="kr.or.ddit.makeProject.vo.MakeProjectPagingVO" resultType="kr.or.ddit.makeProject.vo.MakeProjectVO">
+		SELECT * FROM
+		(
+			SELECT ROWNUM rnum, A.*
+			FROM(
+				SELECT
+			prjct_no, prjct_nm,sumry,TO_CHAR(PRJCT_BEGINDE, 'YYYY-MM-DD') PRJCT_BEGINDE,
+		TO_CHAR(PRJCT_ENDDE, 'YYYY-MM-DD') PRJCT_ENDDE,
+			upper_prjct_no, prjct_rgsde, prjct_ornt, bsnssclae
+			FROM
+			project
+			<include refid="projectSearch"/>
+			ORDER BY prjct_rgsde DESC
+			) A
+		)
+		WHERE rnum BETWEEN #{startRow} AND #{endRow}
+	</select>
+	
+	<select id="totalRecordFindMem" parameterType="kr.or.ddit.makeProject.vo.MakeProjectPagingVO" resultType="int">
+		SELECT COUNT(*) FROM (
+				WITH AUTHMEM AS
+			(
+				SELECT AUTHOR_NM , PRJCT_NO , p.MEM_ID , m.mem_fnm, m.mem_lnm
+				FROM PROJECT_MEM P INNER JOIN ROLE R
+				ON(P.AUTHOR = R.AUTHOR)
+				left outer join mem m on(p.mem_id = m.mem_id)
+			)
+			SELECT
+				UPPER_PRJCT_NO,
+				(SELECT T.PRJCT_NM FROM
+				PROJECT T WHERE T.PRJCT_NO = P.UPPER_PRJCT_NO) "upperPrjctNm",
+				PRJCT_NM, TO_CHAR(PRJCT_BEGINDE, 'YYYY-MM-DD') PRJCT_BEGINDE,
+				TO_CHAR(PRJCT_ENDDE, 'YYYY-MM-DD') PRJCT_ENDDE
+				FROM PROJECT P INNER JOIN AUTHMEM A ON(P.PRJCT_NO =
+				A.PRJCT_NO)
+			<include refid="projectSearch"/>
+		)
+	</select>
+	
+	<select id="selectProjectListFindMem" parameterType="kr.or.ddit.makeProject.vo.MakeProjectPagingVO" resultType="kr.or.ddit.makeProject.vo.MakeProjectVO">
+		WITH AUTHMEM AS
+		(
+			SELECT AUTHOR_NM , PRJCT_NO , p.MEM_ID , m.mem_fnm, m.mem_lnm
+			FROM PROJECT_MEM P INNER JOIN ROLE R
+			ON(P.AUTHOR = R.AUTHOR)
+			left outer join mem m on(p.mem_id = m.mem_id)
+		)
+		SELECT
+			UPPER_PRJCT_NO,
+			(SELECT T.PRJCT_NM FROM
+			PROJECT T WHERE T.PRJCT_NO = P.UPPER_PRJCT_NO) "upperPrjctNm",
+			PRJCT_NM, TO_CHAR(PRJCT_BEGINDE, 'YYYY-MM-DD') PRJCT_BEGINDE,
+			TO_CHAR(PRJCT_ENDDE, 'YYYY-MM-DD') PRJCT_ENDDE
+			FROM PROJECT P INNER JOIN AUTHMEM A ON(P.PRJCT_NO =
+			A.PRJCT_NO)
+		<include refid="projectSearch"/>
+	</select>
+	
+	<select id="selectProject" parameterType="int" resultType="kr.or.ddit.makeProject.vo.MakeProjectVO">
+			SELECT
+				A.PRJCT_NO, PRJCT_NM, SUMRY, PRJCT_BEGINDE,
+				PRJCT_ENDDE, PRJCT_RGSDE,UPPER_PRJCT_NO,
+				PRJCT_ORNT, BSNSSCLAE,
+	            (SELECT B.PRJCT_NM FROM PROJECT B  WHERE B.PRJCT_NO = A.UPPER_PRJCT_NO) PARENT_PRT_NM
+			FROM
+				PROJECT A
+			WHERE PRJCT_NO = #{prtId}	
+	</select>
+	
+	<select id="selectPrtMem" parameterType="int" resultType="kr.or.ddit.accept.vo.ProjectMemVO">
+			SELECT
+				A.MEM_ID,
+				A.AUTHOR,
+				PRJCT_NO,
+				TO_CHAR(CREATEDE, (SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00102' AND SETUP_CN_NO = 1)) create_months,
+				AUTHOR_NM,
+				AUTHOR_DC,
+				MEM_FNM,
+				MEM_LNM,
+				MEM_EMAIL,
+                NVL(MEM_WORK_AVG(A.MEM_ID, PRJCT_NO),0) AVG_WORK
+			FROM
+				PROJECT_MEM A LEFT OUTER JOIN ROLE B ON (A.AUTHOR = B.AUTHOR)
+				LEFT OUTER JOIN MEM C ON(A.MEM_ID = C.MEM_ID)
+			WHERE PRJCT_NO = #{PRTID}
+			 ORDER BY B.SEQUENCE
+	</select>
+	
+	<select id="endPrtMemList" parameterType="int" resultType="kr.or.ddit.accept.vo.ProjectMemVO" >
+		SELECT
+				A.MEM_ID,
+				A.AUTHOR,
+				PRJCT_NO,
+				TO_CHAR(CREATEDE, (SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00102' AND SETUP_CN_NO = 1)) create_months,
+				A.AUTHOR_NM,
+				AUTHOR_DC,
+				MAKENAMEFORMAT(MEM_FNM, MEM_LNM, A.MEM_ID) MEM_NAME,
+				MEM_EMAIL,
+                A.AVG_WORK
+			FROM
+				END_PRT_MEM A LEFT OUTER JOIN ROLE B ON (A.AUTHOR = B.AUTHOR)
+				LEFT OUTER JOIN MEM C ON(A.MEM_ID = C.MEM_ID)
+			WHERE PRJCT_NO = #{prtId}
+			 ORDER BY B.SEQUENCE
+	</select>
+	
+	<select id="selectBaordList" parameterType="int" resultType="kr.or.ddit.wiki.vo.BoardVO">
+				
+		SELECT
+		    PRJCT_NO,    MENU_CL_CODE,    BO_NO,
+		    BO_SJ,    BO_CN,    MEM_ID,
+		    PARENT_BO_NO,   BO_RGSDE,    LIKE_CNT,
+		    BO_PARENT,    OTHBC_AT
+		FROM
+		    BOARD
+		WHERE PRJCT_NO = #{PRTNO}
+	</select>
+	
+	<select id="selectWorkList" parameterType="int" resultType="kr.or.ddit.work.vo.WorkVO">
+		SELECT
+			PRJCT_NO, CTGRY_CODE, WORK_CODE,
+			WORK_SJ, WORK_CN, MEM_ID,
+			WORK_BGNDE, WORK_ENDDE, WORK_RGSDE,
+			WORK_REQ_STTUS_CODE, WORK_RETURN_WHY, UPPER_WORK_CODE,
+			WORK_STTUS_CODE, WORK_PRIORT_CODE, WORK_PRGS_DGREE_POINT,
+			WORK_OTHBC_AT, WORK_UPDTDE
+		FROM
+			WORK
+		WHERE PRJCT_NO = #{prjctNo}
+	</select>
+	
+	<select id="selectIssueCnt" parameterType="int" resultType="int">
+		SELECT COUNT(*) FROM ISSUE WHERE PRJCT_NO = #{ptrId}
+	</select>
+	
+	<select id="selectProjectListForm" resultType="kr.or.ddit.project.vo.ProjectVO">
+		SELECT
+			<![CDATA[			
+			prjct_no, LPAD('     └',6*4*(LEVEL-1), '&nbsp;') || prjct_nm prjct_nm, sumry,
+			]]>
+			prjct_beginde, prjct_endde, upper_prjct_no,
+			prjct_rgsde, prjct_ornt, bsnssclae, level
+		FROM
+			project
+			START WITH upper_prjct_no
+			IS NULL CONNECT BY PRIOR prjct_no = upper_prjct_no
+			ORDER SIBLINGS BY prjct_no desc
+	</select>
+	
+	<sql id="memSearch">
+		WHERE MNGR_AT = 0 AND MEM_JOIN_CONFM_AT = 1 AND MEM_STTUS_CL_CODE = 'M00101'
+			<if test="detailWord != null">
+			
+					AND (MEM_ID = #{detailWord} 
+					OR mem_lnm || mem_fnm = #{detailWord} 
+					OR INSTR(MEM_EMAIL, #{detailWord}) > 0 )
+			</if>
+			
+			<if test="prtId != null">
+				AND MEM_ID NOT IN (
+				SELECT MEM_ID FROM PROJECT_MEM WHERE PRJCT_NO = #{prtId}
+				)
+			</if>
+		
+	</sql>
+	
+	
+		
+	
+	<select id="totlaMemRecord" parameterType="kr.or.ddit.accept.vo.AcceptMemPagingVO" resultType="int">
+		SELECT COUNT(*) FROM MEM
+		<include refid="memSearch"/>
+	</select>
+	
+	<select id="selectMemList" parameterType="kr.or.ddit.accept.vo.AcceptMemPagingVO" resultType="kr.or.ddit.accept.vo.AcceptMemberVO">
+		SELECT *
+		FROM
+		(
+			SELECT
+			ROWNUM rnum, A.*
+			FROM
+				(
+				SELECT
+					mem_id, mem_pass, mem_hp, mem_email,
+					mem_zip, mem_addr1, mem_addr2, mem_fnm,
+					mem_join_confm_at, mem_sttus_cl_code, mem_join_de,
+					mem_join_confm_de, mngr_at, psitn_cl_code, pass_error_cnt,
+					indvdlinfo_agre_de, mem_last_login_de, profl_img_nm, mem_lnm,
+					MAKENAMEFORMAT(MEM_FNM, MEM_LNM, MEM_ID) MEM_NAME
+				FROM
+					mem
+					<include refid="memSearch"/>
+					ORDER BY MEM_NAME
+				)A
+			)
+		WHERE rnum BETWEEN #{startRow} AND #{endRow} 
+	</select>
+	
+	<insert id="insertProject" parameterType="kr.or.ddit.makeProject.vo.MakeProjectVO">
+		
+		<selectKey keyProperty="prjctNo" order="BEFORE" resultType="int">
+			SELECT PRJCT_NO_SEQ.NEXTVAL FROM DUAL
+		</selectKey>
+
+			INSERT INTO project (
+				prjct_no, prjct_nm, sumry,
+				prjct_beginde, prjct_endde, upper_prjct_no,
+				prjct_rgsde, prjct_ornt, bsnssclae
+			) VALUES (
+				#{prjctNo,jdbcType=NUMERIC},
+				#{prjctNm,jdbcType=VARCHAR},
+				#{sumry,jdbcType=VARCHAR},
+				#{prjctBeginde,jdbcType=DATE},
+				#{prjctEndde,jdbcType=DATE},
+				#{upperPrjctNo,jdbcType=NUMERIC},
+				SYSDATE,
+				#{prjctOrnt,jdbcType=VARCHAR},
+				#{bsnssclae,jdbcType=VARCHAR}
+			)
+	
+	</insert>
+	
+	<insert id="insertProjectMem" parameterType="list">
+			INSERT ALL
+		<foreach collection="list" item="prtMem">
+			INTO PROJECT_MEM (MEM_ID, AUTHOR,PRJCT_NO,CREATEDE)
+			VALUES (
+				#{prtMem.memId},
+				#{prtMem.author},
+				#{prtMem.prjctNo},
+				SYSDATE
+			)
+		</foreach>
+		SELECT * FROM DUAL
+	</insert>
+	
+	<select id="childProjectList" parameterType="int" resultType="kr.or.ddit.makeProject.vo.MakeProjectVO">
+			SELECT
+				prjct_no, prjct_nm, sumry,
+				prjct_beginde, prjct_endde, upper_prjct_no,
+				prjct_rgsde, prjct_ornt, bsnssclae, delet_state, LEVEL,
+				CONNECT_BY_ROOT prjct_no
+			FROM
+				project
+			WHERE CONNECT_BY_ROOT prjct_no = #{prtId}
+			AND LEVEL != 1
+				start with upper_prjct_no is null
+				CONNECT BY PRIOR prjct_no = upper_prjct_no ORDER SIBLINGS BY
+			prjct_no desc
+	</select>
+	
+	<update id="deleteProject" parameterType="list">
+		UPDATE PROJECT
+		SET DELET_STATE = '1'
+		WHERE PRJCT_NO IN (
+		
+			<foreach collection="prtIdList" item="prtId" separator=",">
+				#{prtId}
+			</foreach>
+		
+		)
+		
+	</update>
+	
+</mapper>

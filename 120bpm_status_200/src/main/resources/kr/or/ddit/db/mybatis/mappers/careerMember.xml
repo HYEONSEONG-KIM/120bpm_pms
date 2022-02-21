@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.member.dao.CareerDao">
+
+
+	<update id="insertCareers" parameterType="java.util.ArrayList">
+		<foreach collection="list" item = "career" open ="INSERT ALL" close="SELECT*FROM DUAL" separator=",">
+		INTO CAREER_MATTER VALUE 	 
+					#{career.careerMatterNo,jdbcType=NUMERIC},
+					#{career.partcptnBiz,jdbcType=VARCHAR}, 
+					TO_DATE(#{career.beginde,jdbcType=DATE}, 'YYYY-MM-DD')
+					TO_DATE(#{career.endde,jdbcType=DATE}, 'YYYY-MM-DD')
+					#{career.orntNm,jdbcType=VARCHAR}, 
+					#{career.wrkplcNm,jdbcType=VARCHAR}, 
+					#{career.ofcpsNm,jdbcType=VARCHAR}, 
+					#{career.atndDu,jdbcType=VARCHAR}, 
+					#{memId,jdbcType=VARCHAR}
+					
+		</foreach>
+	</update>
+</mapper>

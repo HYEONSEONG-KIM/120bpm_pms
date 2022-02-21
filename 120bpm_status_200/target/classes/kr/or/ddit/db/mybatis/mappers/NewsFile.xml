@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.news.dao.NewsFileDAO">
+	
+	<select id="selectNewsFileInfo" parameterType="kr.or.ddit.issue.vo.IssueVO">
+	SELECT
+	    BO_FILE_NM,
+	    BO_FILE_RGSDE,
+	    BO_FILE_SAVED_NM,
+	    BO_FILE_CODE,
+	    PRJCT_NO,
+	    BO_NO,
+	    BO_FILE_DEL_AT,
+	    MENU_CL_CODE
+	FROM
+	    BO_FILE
+	    WHERE BO_FILE_CODE = #{issueFile}
+	    
+	</select>
+
+	<update id="updateNewsFile" parameterType="kr.or.ddit.news.vo.NewsVO">
+		<foreach collection="newsFileList" item="file" index="idx"  separator=";" open="DECLARE BEGIN" close="; END;">
+			UPDATE ATCH_FILE
+			SET
+			TEMP_AT =#{file.boFileTempAt},
+			BO_NO =#{issueNo}
+			<where>
+				FILE_SAVED_NM =#{file.boFileSavedNm}
+			</where>
+		
+		</foreach>
+	</update>
+	
+	<delete id="deleteNewsFile" parameterType="kr.or.ddit.news.vo.NewsVO">
+	DELETE FROM BO_FILE 
+		WHERE BO_FILE_CODE IN
+		<foreach collection="delFileNo" item="fileNo" open="(" close=")" separator=",">
+	 	#{fileNo}
+		</foreach>
+	</delete>
+	
+	<delete id="deleteAttatches" parameterType="kr.or.ddit.news.vo.NewsVO">
+	DELETE FROM ATCH_FILE
+		WHERE FILE_NO IN
+		<foreach collection="delFileNo" item="fileNo" open="("
+			close=")" separator=",">
+			#{fileNo}
+		</foreach>
+	
+	</delete>
+	
+	<delete id="deleteAllNewsFile" parameterType="kr.or.ddit.news.vo.NewsVO">
+	<!--보드의 해당 게시글 파일 모두 삭제 -->
+	DELETE FROM BO_FILE
+		WHERE BO_NO IN
+		<foreach collection="boNos" item="issueNo" index="i"
+			separator="," open="(" close=")">
+			#{issueNo}
+		</foreach>
+	</delete>
+
+
+	<delete id="deleteAttatchAll" parameterType="kr.or.ddit.news.vo.NewsVO">
+	DELETE FROM ATCH_FILE
+		WHERE BO_NO IN
+		<foreach collection="boNos" item="issueNo" index="i"
+			separator="," open="(" close=")">
+			#{issueNo}
+		</foreach>
+	</delete>
+</mapper>

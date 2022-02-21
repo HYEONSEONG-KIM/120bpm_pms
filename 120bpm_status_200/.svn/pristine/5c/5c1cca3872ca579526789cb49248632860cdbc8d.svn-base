@@ -1,0 +1,74 @@
+@charset "UTF-8";
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300&display=swap'); 
+@import url('https://fonts.googleapis.com/css2?family=Geostar&family=Geostar+Fill&display=swap');
+body{
+	font-family: 'Noto Sans KR', sans-serif; 
+	background:  #42b4e6;
+} 
+h1{
+	margin: 0; 
+}
+#loginDiv{
+	margin : 100px auto;
+	padding : 20px 30px;
+	width : 600px;
+	text-align: center;
+	background:rgba(255, 255, 255, 0.5);
+}
+form {
+	background: white;
+	padding : 30px 10px;
+}
+input[type=text], input[type=password] {
+	height : 50px;
+	width : 80%;
+	margin : 10px;
+	font-size: 1.1em;
+}
+#remember{
+	margin-left : 10%; 
+	display :flex;
+	align-content: flex-start;
+}
+#loginBtn{
+	font-size: large;  
+	background: #d9f3ff;
+	padding : 3px 8px; 
+	align-content: space-between;
+	width : 80%; 
+	height: 50px;
+	border: 2px outset lightgray;
+	border-radius: 10px; 
+	z-index: 1;
+}
+
+#loginBtn:hover{
+	background: #42b4e6;
+	color: white;
+}  
+
+a{
+	color: gray;
+	text-decoration: none;
+} 
+a:hover{
+	color: #42b4e6;
+	text-decoration: underline;
+}
+.logotext{
+	font-family: 'Geostar Fill', cursive;
+}
+.inline-hr{
+	display: inline-block;
+	width : 100px;
+	border: 1px solid lightsteelblue;
+	margin : 0 10px;
+	vertical-align: middle; 
+} 
+hr{
+	border: 1px solid lightsteelblue;
+	width : 400px;
+}
+#logo{ 
+	width :100px;
+}

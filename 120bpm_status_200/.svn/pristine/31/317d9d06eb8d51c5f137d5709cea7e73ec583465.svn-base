@@ -1,0 +1,234 @@
+@charset "UTF-8";
+
+/** [button사용시 클래스 이걸로 하기]
+<button type="button" class="searchBtn btn">검색</button> 
+   클래스 쓸때 btn 꼭 써줘여 */
+ 
+/** [table]
+	<table class="table">   
+		<thead></thead>
+		<tbody></tbody>
+		<tfoot></tfoot>
+	</table> 
+*/   
+/** [pagingVO에 paging 처리 이걸로 하기]
+	private static final String PAGEITEM = "<li class='page-item %s' %s>"
+					+"<a class='page-link pageLink' href='#' data-page='%d'>%s</a>"
+					+ "</li>";
+	
+	public String getPagingHTMLBS() {
+		StringBuffer html = new StringBuffer();
+		html.append("<nav aria-label='...' class='mt-3'>");
+		html.append("<ul class='pagination'>");
+		String first = null;
+		String second = null;
+		int third = -1; 
+		String fourth = "<";
+		if(startPage > 1) {
+			first = "";
+			second = "";
+			third = startPage - 1;
+		}else {
+			first ="disabled";
+			second = "tabindex='-1' aria-disabled='true'";
+			third = -1;
+		}
+		html.append(
+			String.format(PAGEITEM, first, second, third, fourth)	
+		);
+		endPage = endPage < totalPage ? endPage : totalPage;
+		for(int page=startPage; page<=endPage; page++) {
+			second = "";
+			third = page;
+			fourth = page + "";
+			if(page==currentPage) {
+				first = "active";
+			}else {
+				first = "";
+			}
+			html.append(
+				String.format(PAGEITEM, first, second, third, fourth)	
+			);
+		}
+		fourth = ">";
+		if(endPage < totalPage) {
+			first = "";
+			second = "";
+			third = endPage + 1;
+		}else {
+			first ="disabled";
+			second = "tabindex='-1' aria-disabled='true'";
+			third = -1;
+		}
+		html.append(
+			String.format(PAGEITEM, first, second, third, fourth)	
+		);
+		html.append("</ul>");
+		html.append("</nav>");
+		return html.toString();
+	}
+
+*/
+
+/**  [검색UI 사용시 이걸 토대로 할것]
+	<div id="searchUI" class="row">
+	<div class="newWriteBtn">
+		<button type="button" class="newBtn btn">
+			<img class="newImg" src="${cPath}/resources/imgs/img/new.png">
+			글쓰기
+		</button>
+	</div>
+	<br>
+	<div>
+		<div class="searchUIInput">
+			<label>검색1</label> <select>
+				<option value>옵션</option>
+				<option value="1">옵션1</option>
+				<option value="0">옵션2</option>
+			</select> <label>검색2</label> <input type="text" /> <label>날짜1</label> <input
+				type="date" /> <label>날짜2</label> <input type="date" />
+			<button type="button" class="resetBtn btn ">
+				<img class="resetImg" src="${cPath}/resources/imgs/img/reset.png">
+			</button>
+		</div>
+		<div class="searchUIBtn">
+			<button type="button" id="searchBtn" class="btnTags btn searchBtn">검색</button>
+		</div>
+	</div>
+</div> 
+*/ 
+
+.searchBtn{
+	background: #69c7f0;
+	border-color:#69c7f0;
+	color : white;
+}
+.insertBtn{
+	background: #28d1d1;
+	border-color:#28d1d1;
+	color : white;
+}
+.updateBtn{
+	background: #e3c42b;
+	border-color:#e3c42b;
+	color : white;
+} 
+.deleteBtn{ 
+	background: #e667a4;
+	border-color:#e667a4;
+	color : white;
+}
+.gobackBtn{
+	background: #fdfdfd; 
+	border-color:#aba9a9;
+	color : #20444f;
+}
+.btbtn{
+	background: #42B4E6;
+	border-color:#42B4E6;
+	color : white;
+}
+/* 초기화버튼
+<button type="button" class="resetBtn btn"><img class="resetImg" src="${cPath}/resources/imgs/img/reset.png"></button> 
+*/ 
+.resetBtn{
+	background: #fff;
+	padding : 0; 
+}  
+
+.resetImg{
+	width : 23px;
+}
+.newImg{
+	width : 20px; 
+}   
+  
+.newBtn{ 
+	background: white;
+	border-color: #aba9a9;
+}
+.table{
+	padding : 0 3px;
+	cursor: pointer;
+	font-size: 1.1rem;
+}
+.table tr{
+	background: white;
+}  
+.table th {  
+	padding: 0 10px;
+	vertical-align: middle; 
+	text-align: center;  
+	line-height: 3.0;
+}       
+.table td{ 
+	padding: 0 10px;
+	vertical-align: middle; 
+	line-height: 2.7;
+}  
+.table tfoot tr{
+	background: transparent;
+} 
+.table tfoot td{
+	padding : 30px 0;
+}  
+#pagingArea{
+	display : flex;
+	justify-content: center;
+}
+.pagingArea{
+	display : flex;
+	justify-content: center;
+}
+.page-link{
+	color:#42B4E6;
+	border: 1px solid #42B4E6;
+}
+.page-item.active .page-link{
+	background-color: #42B4E6;
+	border-color: #42B4E6;
+}
+
+#searchUI{
+	width:100%;
+	display: flex;
+	line-height: normal;
+	flex-direction: row;
+	justify-content: flex-end;
+}  
+
+#searchUI input, #searchUI select{ 
+	font-size: 1.1rem; 
+	font-weight: 300;
+	border: 1px solid #aba9a9;
+}       
+.evenLabel{ 
+	padding-left: 20px;    
+}  
+#searchUI label{ 
+	font-size: 1.0rem;
+}
+.searchUIInput{
+	display:inline-block;   
+}   
+.newWriteBtn{ 
+	display: inline-flex;
+	flex-wrap: wrap; 
+	justify-content: flex-end;  
+	float: right;
+	padding-bottom: 10px;
+	vertical-align: top; 
+	margin-top: auto;
+}
+.searchUIBtn{
+	display: inline-flex;
+	flex-wrap: wrap; 
+	justify-content: flex-end;  
+	align-items: baseline;
+	float: right;
+	vertical-align: top; 
+	padding-top: 20px;
+}
+.reset{
+	display:inline-block;    
+} 

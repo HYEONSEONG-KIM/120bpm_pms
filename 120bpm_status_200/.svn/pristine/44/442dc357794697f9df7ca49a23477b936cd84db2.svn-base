@@ -1,0 +1,27 @@
+welcomeMsg=WELCOMEPAGE
+login=LOGIN
+regist=MEBMER REGIST
+
+member.memRole=MEMROLE
+member.memPath=MEMPATH
+member.memImg=MEMIMG
+member.memThumbnail=MEMTHUMBNAIL
+member.memId=MEMID
+member.memPass=MEMPASS
+member.memName=MEMNAME
+member.memRegno1=MEMREGNO1
+member.memRegno2=MEMREGNO2
+member.memBir=MEMBIR
+member.memZip=MEMZIP
+member.memAdd1=MEMADD1
+member.memAdd2=MEMADD2
+member.memHometel=MEMHOMETEL
+member.memComtel=MEMCOMTEL
+member.memHp=MEMHP
+member.memMail=MEMMAIL
+member.memJob=MEMJOB
+member.memLike=MEMLIKE
+member.memMemorial=MEMMEMORIAL
+member.memMemorialday=MEMMEMORIALDAY
+member.memMileage=MEMMILEAGE
+member.memDelete=MEMDELETE

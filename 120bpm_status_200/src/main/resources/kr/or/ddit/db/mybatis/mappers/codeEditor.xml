@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.webIDE.dao.CodeEditorDAO">
+	<select id="codeEditorList" parameterType="int" resultType="kr.or.ddit.webIDE.vo.CodeEditorVO">
+		SELECT
+			EDITOR_CODE, A.MEM_ID, PRJCT_NO,
+			EDITOR_NM, MAKEDATEFORMAT(CREATEDE)CREATEDE , MAKENAMEFORMAT(MEM_FNM, MEM_LNM,B.MEM_ID) MEM_NAME
+		FROM
+			CODE_EDITOR A LEFT OUTER JOIN MEM B ON(A.MEM_ID = B.MEM_ID)
+		WHERE PRJCT_NO = #{prtId}
+	</select>
+	
+	<select id="codeEditCntMem" parameterType="kr.or.ddit.webIDE.vo.CodeEditorVO" resultType="int">
+		SELECT COUNT(*) FROM CODE_EDITOR WHERE MEM_ID = #{memId} AND PRJCT_NO = #{prjctNo}
+	</select>
+	
+	<select id="selectCodeEditor" parameterType="int" resultType="kr.or.ddit.webIDE.vo.CodeEditorVO">
+		SELECT
+			EDITOR_CODE, A.MEM_ID, PRJCT_NO,
+			EDITOR_NM, MAKEDATEFORMAT(CREATEDE)CREATEDE , MAKENAMEFORMAT(MEM_FNM, MEM_LNM,B.MEM_ID) MEM_NAME
+		FROM
+			CODE_EDITOR A LEFT OUTER JOIN MEM B ON(A.MEM_ID = B.MEM_ID)
+		WHERE EDITOR_CODE = #{editCode}
+	</select>
+	
+	<insert id="insertCodeEitor" parameterType="kr.or.ddit.webIDE.vo.CodeEditorVO">
+		INSERT INTO code_editor (
+			EDITOR_CODE,MEM_ID,PRJCT_NO,
+			EDITOR_NM,CREATEDE
+		) VALUES (
+			(SELECT NVL(MAX(editor_code),0)+1 FROM code_editor),
+			#{memId,jdbcType=VARCHAR},
+			#{prjctNo,jdbcType=NUMERIC},
+			#{editorNm,jdbcType=VARCHAR},
+			SYSDATE
+		)
+	</insert>
+	
+	<delete id="deleteCodeEitor" parameterType="int">
+		DELETE FROM CODE_EDITOR WHERE EDITOR_CODE = #{editCode}
+	</delete>
+</mapper>

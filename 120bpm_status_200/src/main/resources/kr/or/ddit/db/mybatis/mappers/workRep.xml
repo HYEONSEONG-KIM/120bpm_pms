@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.work.dao.WorkRepDAO">
+	
+<select id="selectWorkRepList" resultType="kr.or.ddit.work.vo.WorkRepVO" parameterType="kr.or.ddit.work.vo.ExtendPagingVO" >
+	SELECT D.*
+			FROM
+			(
+			SELECT ROWNUM RNUM ,  C.*
+			 FROM (
+					   SELECT
+					    WORK_REP_CN,
+					    MAKENAMEFORMAT(m.MEM_FNM ,m.MEM_LNM, A.MEM_ID ) REP_WRITER,
+					    MAKEDATEFORMAT(WORK_REP_RGSDE) WORK_REP_RGSDE,
+					    WORK_REP_RGSDE writeDate,
+					    WORK_REP_NO,
+					    B.WORK_CODE,
+					    B.CTGRY_CODE,
+					    B.PRJCT_NO,
+					    A.MEM_ID REP_WRITER_Id
+					FROM
+					    WORK_REP A INNER JOIN WORK B ON(A.WORK_CODE = B.WORK_CODE )
+					    inner join mem m on (a.mem_id =m.mem_id) 
+					    WHERE B.WORK_CODE =  #{detailSearch.workCode}
+					    ORDER BY writeDate  DESC
+    		) C 
+	)D
+			 WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+
+</select>
+
+
+<select id="selectWorkRepTotal" resultType="int" parameterType="kr.or.ddit.work.vo.ExtendPagingVO">
+  SELECT COUNT(*) FROM
+  WORK_REP
+  WHERE WORK_CODE = #{detailSearch.workCode}
+	
+</select>
+
+
+<insert id="insertWorkRep" parameterType="kr.or.ddit.work.vo.WorkRepVO">
+	<selectKey resultType="int" keyProperty="workRepNo" order="BEFORE">
+		SELECT NVL(MAX(WORK_REP_NO), 0) + 1 FROM WORK_REP
+	</selectKey>
+			INSERT INTO WORK_REP (
+			    WORK_REP_CN,    MEM_ID,    WORK_REP_RGSDE,
+			    WORK_REP_NO,    WORK_CODE,    CTGRY_CODE,
+			    PRJCT_NO
+			) VALUES (
+			    #{workRepCn,jdbcType=CLOB},
+			    #{memId,jdbcType=VARCHAR},
+			    sysdate,
+			    #{workRepNo,jdbcType=NUMERIC},
+			    #{workCode,jdbcType=VARCHAR},
+			    #{ctgryCode,jdbcType=NUMERIC},
+			    #{prjctNo,jdbcType=NUMERIC} 
+			)
+</insert>
+
+	<delete id="deleteWorkRep" parameterType="kr.or.ddit.work.vo.WorkRepVO">
+	 DELETE FROM WORK_REP
+	 WHERE
+     WORK_REP_NO = #{workRepNo}
+	</delete>
+
+	<update id="modifyWorkRep" parameterType="kr.or.ddit.work.vo.WorkRepVO">
+	    UPDATE WORK_REP
+	    SET
+	    WORK_REP_CN =  #{workRepCn}
+	    WHERE WORK_REP_NO = #{workRepNo}
+		
+	</update>
+	
+	<select id="selectWorkRepInfo" parameterType="kr.or.ddit.work.vo.WorkRepVO" resultType="kr.or.ddit.work.vo.WorkRepVO"> 
+	SELECT
+    WORK_REP_CN,    MEM_ID,    WORK_REP_RGSDE,    WORK_REP_NO,
+    WORK_CODE, CTGRY_CODE,    PRJCT_NO
+FROM
+    WORK_REP
+    WHERE     WORK_CODE = #{workCode}
+	AND    WORK_REP_NO = #{workRepNo}
+	</select>
+</mapper>

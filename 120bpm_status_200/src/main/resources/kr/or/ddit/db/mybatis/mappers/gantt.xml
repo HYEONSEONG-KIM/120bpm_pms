@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.activity.dao.GanttDAO">
+	<select id="selectPrjctWorkInfoList" parameterType="kr.or.ddit.mypage.vo.MyWorkVO" resultType="kr.or.ddit.mypage.vo.MyWorkVO">
+		SELECT W.PRJCT_NO, W.WORK_CODE, W.CTGRY_CODE, W.MEM_ID,
+		    MAKENAMEFORMAT((SELECT MEM_FNM FROM MEM M WHERE M.MEM_ID = W.MEM_ID),(SELECT MEM_LNM FROM MEM M WHERE M.MEM_ID = W.MEM_ID),W.MEM_ID) MEM_NAME,   
+		     LPAD('  └ ', 4 *  ( LEVEL - 1 ) ) ||W.WORK_SJ WORK_SJ
+		    ,W.WORK_PRGS_DGREE_POINT, W.UPPER_WORK_CODE, W.WORK_OTHBC_AT
+		     ,WORK_STTUS_CODE,(SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CODE_NO = W.WORK_STTUS_CODE) STTUS_NM
+    		,WORK_PRIORT_CODE, (SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CODE_NO = W.WORK_PRIORT_CODE) PRIORT_NM
+		   ,TO_CHAR(W.WORK_BGNDE, 'YYYY-MM-DD') WORK_BGNDE
+		   ,TO_CHAR(W.WORK_ENDDE, 'YYYY-MM-DD') WORK_ENDDE
+		   ,LEVEL
+		FROM WORK W 
+		WHERE W.PRJCT_NO =  #{prjctNo}
+		AND W.WORK_OTHBC_AT = '1' 
+		AND WORK_DELETE_AT = '0'
+		<if test="detailSearch != null">
+			<choose>
+				<when test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailSearch.startDate)">
+					AND ((WORK_BGNDE BETWEEN(#{detailSearch.startDate}) AND (#{detailSearch.endDate}))
+				</when>
+				<otherwise>   
+					AND ((WORK_BGNDE BETWEEN(SYSDATE - 30) AND (SYSDATE + 30))
+				</otherwise>
+			</choose> 
+			<choose> 
+				<when test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailSearch.endDate)">
+					OR (WORK_ENDDE BETWEEN(#{detailSearch.startDate})  AND (#{detailSearch.endDate}))) 
+				</when>
+				<otherwise> 
+					OR (WORK_ENDDE BETWEEN(SYSDATE -30) AND (SYSDATE + 30))) 
+				</otherwise>
+			</choose>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailSearch.workSj)">
+				AND INSTR(WORK_SJ, #{detailSearch.workSj}) > 0
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailSearch.workPriortCode)">
+				AND WORK_PRIORT_CODE = #{detailSearch.workPriortCode}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailSearch.workSttusCode)">
+				AND WORK_STTUS_CODE = #{detailSearch.workSttusCode}
+			</if> 
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailSearch.ctgryCode)">
+				AND CTGRY_CODE = #{detailSearch.ctgryCode} 
+			</if> 
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailSearch.memId)">
+				AND MEM_ID = #{detailSearch.memId} 
+			</if>
+		</if>
+		START WITH W.UPPER_WORK_CODE IS NULL
+		CONNECT BY PRIOR W.WORK_CODE = W.UPPER_WORK_CODE
+	</select>
+	
+	<select id="selectWorkStatus" resultType="kr.or.ddit.activity.vo.CmmnCodeDetailVO">
+		SELECT CODE_NO, CODE_NM
+		FROM CMMN_CODE_DETAIL
+		WHERE CL_CODE = 'W001' 
+	</select> 
+	 
+	<select id="selectWorkPriort" resultType="kr.or.ddit.activity.vo.CmmnCodeDetailVO">
+		SELECT CODE_NO, CODE_NM
+		FROM CMMN_CODE_DETAIL
+		WHERE CL_CODE = 'W002'
+	</select>
+	
+	<select id="selectPrjctMems" parameterType="kr.or.ddit.main.vo.MyPrjctMemVO" resultType="kr.or.ddit.main.vo.MyPrjctMemVO">
+		SELECT P.MEM_ID , DECODE(P.MEM_ID, #{memId} ,'나(' ||MAKENAMEFORMAT(M.MEM_FNM, M.MEM_LNM, P.MEM_ID)||')' 
+                    ,MAKENAMEFORMAT(M.MEM_FNM, M.MEM_LNM, P.MEM_ID) ) MEM_NAME
+		FROM PROJECT_MEM P INNER JOIN MEM M ON(P.MEM_ID = M.MEM_ID)
+		WHERE P.PRJCT_NO = #{prjctNo}
+		AND P.AUTHOR != 'ROLE_OB' 
+	</select>
+</mapper>

@@ -1,0 +1,59 @@
+@charset "UTF-8";
+
+#topPar{
+		width: 95%;
+		background: #ffffff;
+		display: grid;
+		grid-template-columns : 1fr 0.1fr 1fr;
+		margin: 2%;
+		text-align: center;
+	}
+	#middlePar, #bottomPar, #projectPar{
+		width: 95%;
+		background: #ffffff;
+		margin: 2%;
+		text-align: center;
+		padding-top: 5px;
+	}
+	#memImg{
+		border-radius: 10px;
+		width: 250px;
+		height: 300px;
+		margin-top: 30px;
+	}
+	
+	.topChild{
+		margin: 22px;
+	}
+	#basicInfo, #detailInfo{
+		font-size : 20px;
+	}
+	#basicInfo tr,#detailInfo tr{
+		height: 45px;
+	}
+	#basicInfo th, #detailInfo th{
+		text-align : left;
+		width: 100px;
+	}
+	#basicInfo td{
+		text-align: left;	
+	}
+	 #detailInfo td{
+		width: 200px;
+	}
+ 	#detailInfo th{ 
+ 		border-right : 1px solid lightgray;
+ 	} 
+ 	#detailInfo td{ 
+ 		border-right : 1px solid lightgray; 
+	
+ 	} 
+	hr{
+		background-color: blue;
+	}
+	h4{
+		margin: 20px;
+	}
+	#projectInfo th, #detailInfo th, #careerInfo th{
+		background-color: lightgray;
+	}

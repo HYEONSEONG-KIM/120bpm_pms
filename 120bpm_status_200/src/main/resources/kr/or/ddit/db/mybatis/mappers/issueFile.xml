@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.issue.dao.IssueFileDAO">
+
+	<update id="updateIssueFile"
+		parameterType="kr.or.ddit.issue.vo.IssueVO">
+		<foreach collection="issueFileList" index="idx" item="file" separator=";" open="DECLARE BEGIN" close="; END;">
+			UPDATE ATCH_FILE
+			SET
+			TEMP_AT =#{file.issueFiletempAt},
+			BO_NO =#{issueNo}
+			<where>
+				FILE_SAVED_NM =#{file.issueFileSavedNm}
+			</where>
+
+		</foreach>
+	</update>
+
+	<select id="selectWorkFileInfo" parameterType="String" resultType="kr.or.ddit.issue.vo.IssueFileVO">
+	
+	 SELECT
+		    ISSUE_FILE_NM,
+		    ISSUE_FILE_RGSDE,
+		    ISSUE_FILE_SAVED_NM,
+		    ISSUE_FILE_CODE,
+		    ISSUE_FILE_DEL_AT,
+		    PRJCT_NO,
+		    CTGRY_CODE,
+		    WORK_CODE,
+		    ISSUE_NO
+	FROM
+		    ISSUE_FILE
+		    WHERE ISSUE_FILE_CODE =#{issueFileCode}
+			
+	</select>
+
+	<insert id="insertIssueFiles"
+		parameterType="kr.or.ddit.issue.vo.IssueVO">
+		INSERT ALL
+		<foreach collection="issueFileList" item="file">
+			INTO
+			ISSUE_FILE (
+			ISSUE_FILE_NM,
+			ISSUE_FILE_SAVED_NM,
+			ISSUE_FILE_CODE,
+			ISSUE_FILE_DEL_AT,
+			PRJCT_NO,
+			CTGRY_CODE,
+			WORK_CODE,
+			ISSUE_NO
+			) VALUES (
+			#{file.issueFileNm , jdbcType=VARCHAR},
+			#{file.issueFileSavedNm , jdbcType=VARCHAR},
+			(SELECT FILE_NO FROM atch_file
+			WHERE PRJCT_NO = #{prjctNo}
+			AND FILE_SAVED_NM =#{file.issueFileSavedNm}),
+			#{file.issueFileDelAt,jdbcType=CHAR},
+			#{prjctNo , jdbcType=NUMERIC},
+			#{ctgryCode , jdbcType=VARCHAR},
+			#{workCode , jdbcType=VARCHAR},
+			#{issueNo , jdbcType=NUMERIC}
+			)
+		</foreach>
+		SELECT * FROM DUAL
+	</insert>
+
+	<delete id="deleteAttatchAll"
+		parameterType="kr.or.ddit.issue.vo.IssueVO">
+		DELETE FROM ATCH_FILE
+		WHERE BO_NO IN
+		<foreach collection="issueNos" item="issueNo" index="i"
+			separator="," open="(" close=")">
+			#{issueNo}
+		</foreach>
+
+	</delete>
+
+	<delete id="deleteAttatches"
+		parameterType="kr.or.ddit.issue.vo.IssueVO">
+		DELETE FROM ATCH_FILE
+		WHERE FILE_NO IN
+		<foreach collection="delFileNo" item="fileNo" open="("
+			close=")" separator=",">
+			#{fileNo}
+		</foreach>
+	</delete>
+
+	<delete id="deleteAllIssueFile"
+		parameterType="kr.or.ddit.issue.vo.IssueVO">
+		DELETE FROM ISSUE_FILE
+		WHERE ISSUE_NO IN
+		<foreach collection="issueNos" item="issueNo" index="i"
+			separator="," open="(" close=")">
+			#{issueNo}
+		</foreach>
+
+	</delete>
+
+
+	<delete id="deleteIssueFile"
+		parameterType="kr.or.ddit.issue.vo.IssueVO">
+		DELETE FROM ISSUE_FILE
+		WHERE ISSUE_FILE_CODE IN
+		<foreach collection="delFileNo" item="fileNo" open="("
+			close=")" separator=",">
+			#{fileNo}
+		</foreach>
+	</delete>
+
+
+</mapper>

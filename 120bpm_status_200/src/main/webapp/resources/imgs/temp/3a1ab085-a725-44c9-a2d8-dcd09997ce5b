@@ -1,0 +1,657 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>	
+<%@ taglib uri="http://www.springframework.org/tags/form" prefix="form" %>
+<%@ taglib uri="http://www.springframework.org/security/tags" prefix="security" %>
+ <!DOCTYPE html>
+<html>
+<head> 
+<script type="text/javascript" src="${cPath }/resources/js/jquery-3.6.0.min.js"></script>
+
+<!-- 추가할 스크립트-->
+<script src="//blueimp.github.io/JavaScript-Load-Image/js/load-image.all.min.js"></script>
+<script type="text/javascript" src="${pageContext.request.contextPath }/resources/jQuery-File-Upload-master/jQuery-File-Upload-master/js/vendor/jquery.ui.widget.js"></script>
+<script src="${cPath}/resources/jQuery-File-Upload-master/jQuery-File-Upload-master/js/jquery.iframe-transport.js"></script>
+<script src="${cPath}/resources/jQuery-File-Upload-master/jQuery-File-Upload-master/js/jquery.fileupload.js"></script>
+<link rel="stylesheet" href="${cPath}/resources/jQuery-File-Upload-master/jQuery-File-Upload-master/css/jquery.fileupload-ui.css">
+<link rel="stylesheet" href="${cPath}/resources/jQuery-File-Upload-master/jQuery-File-Upload-master/css/jquery.fileupload.css">
+<script type="text/javascript" src="${cPath}/resources/jQuery-File-Upload-master/jQuery-File-Upload-master/js/jquery.fileupload-process.js"></script>
+<!-- 여기까지만 추가하시면 됩니다 -->
+
+<!-- 팬시트리용 -->
+<script type="text/javascript" src="${cPath}/resources/js/fancytree/jquery.fancytree-all-deps.min.js"></script>
+<!--  팬싵트리 디자인 여러개 넣을 경우 충돌 남 사용할 것만 넣는것이 중요-->
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.fancytree/2.38.0/skin-bootstrap/ui.fancytree.min.css" integrity="sha512-ZNPDR7ghmCig7eBuBHYMFeJix4+wxZ37Ky5RmhU/CbpzATUO2sLhB5HJaRCWirl7YHJDQvmE3rbf4FOQOttygg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+ 
+ 
+ <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery.fancytree/2.6.0/src/jquery.fancytree.filter.js"></script>
+ <link rel="stylesheet"
+    href="//cdnjs.cloudflare.com/ajax/libs/jquery-contextmenu/2.2.3/jquery.contextMenu.min.css" />
+  <script src="//cdnjs.cloudflare.com/ajax/libs/jquery-contextmenu/2.2.3/jquery.contextMenu.min.js"></script>
+ 
+ <!-- 팬시트리 ui 메뉴 삭제 -->
+ 
+ <link rel="stylesheet" href="${cPath}/resources/css/commons.css">
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<style type="text/css">
+
+.cost {
+/* 	padding-right: 15px;
+	padding-left: 15px;
+	margin-right: auto;
+	margin-left: auto; */
+	display: grid;
+	 grid-template-columns: 45% 55%;
+}
+ 
+ ul.fancytree-container {
+  /*   width: 400px; */
+    height: 500px;
+    overflow: auto;
+    position: relative;
+  }
+ 
+
+span.fancytree-title {
+    width: 300px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sizing{
+overflow:auto;
+height: 200px;
+}
+/* .divAuto{
+height: 500px; 
+overflow:auto;
+
+} */
+ div#tree {
+    /* width: 90%; */
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid 1px solid rgba(0,0,0,.12);
+    box-shadow: 0 2px 2px 0 rgba(0,0,0,.14),0 3px 1px -2px rgba(0,0,0,.2),0 1px 5px 0 rgba(0,0,0,.12);
+  }
+  
+    table.fancytree-container {
+    table-layout: fixed;
+    outline: 0;  /* No focus frame */
+  }
+  
+  #tree{
+  font-size: 1.2em;
+  }
+  
+  .fileList{
+  display: none;
+  }
+  
+  .fontbigger{
+  
+  font-size: 15px;
+  font-weight: 600;
+  margin-top : 7px;
+  }
+/* .input-group-prepend{
+ width: 100%;
+}  
+ */
+ 
+ .uploadDiv{
+display: flex;
+ 
+}
+#fileupload{
+width: 120px;
+
+}
+#saveBtn{
+float: right;
+}
+
+.FormArea , #saveBtn{
+display : none;
+}
+  ul.ui-effects-placeholder { width:10px !important; }
+.fileSet{
+background-color: white;
+}
+
+#detailInfo{
+background-color: white;
+/* box-shadow:0 4px 10px 0 rgba(0,0,0,0.2),0 4px 20px 0 rgba(0,0,0,0.19); */
+ height: 500px;
+}
+ 
+ 
+.info{position:relative}
+</style>
+</head>
+<body>
+<c:if test="${not empty message }">
+	<script type="text/javascript">
+		Swal.fire({
+			 title: "잘못된 요청입니다!",
+			  text:  "${message }",
+			  icon: "error",
+			  button: "OK",
+			}) 
+		
+	</script>
+</c:if>
+<c:if test="${not empty success }">
+	<script type="text/javascript">
+		Swal.fire({
+			 title: "파일추가가 성공했습니다",
+			  text:  "${success }",
+			  icon: "success",
+			  button: "OK",
+			}) 
+	</script>
+</c:if>
+
+<c:if test="${not empty downLoadFail }">
+	<script type="text/javascript">
+		Swal.fire({
+			 title: "파일 다운로드 실패",
+			  text:  "${downLoadFail}",
+			  icon: "error",
+			  button: "OK",
+		}) 
+ <% session.removeAttribute("downLoadFail"); %>
+	</script>
+ </c:if>
+
+ <div class="cost">
+ 	<div class="fileLeft">
+   
+	<div class="input-group">
+ 	 <label class="fontbigger">파일명 검색</label>
+     <div class="input-group-prepend">
+    <input name="search" placeholder="파일명" class="form-control" autocomplete="off">
+     <button id="btnResetSearch" class="resetBtn btn"><img class="resetImg" src="${cPath}/resources/imgs/img/reset.png"></button>
+    </div>
+     <button class="btn btn-light btn-sm" id="allExpand">전체 확장</button>
+   	<button class="btn btn-secondary btn-sm" id="allCollapse">전체 접기</button>
+ 	</div>
+   
+  	  
+    <span id="matches"></span>
+  
+  
+ 	<div id="tree" ></div>
+  
+ 	</div>
+ 	
+
+ 	<div class="fileRight">
+ <div id="detailInfo">
+ 		 <div class="info">
+          <div class="w3-display-bottomleft w3-container w3-text-black">
+            <h2>Jane Doe</h2>
+          </div>
+        </div>
+        <div class="w3-container">
+          <p><i class="fa fa-briefcase fa-fw w3-margin-right w3-large w3-text-teal"></i>Designer</p>
+          <p><i class="fa fa-home fa-fw w3-margin-right w3-large w3-text-teal"></i>London, UK</p>
+          <p><i class="fa fa-envelope fa-fw w3-margin-right w3-large w3-text-teal"></i>ex@mail.com</p>
+          <p><i class="fa fa-phone fa-fw w3-margin-right w3-large w3-text-teal"></i>1224435534</p>
+          <hr>
+
+          <p class="w3-large"><b><i class="fa fa-asterisk fa-fw w3-margin-right w3-text-teal"></i>Skills</b></p>
+          <p>Adobe Photoshop</p>
+          <div class="w3-light-grey w3-round-xlarge w3-small">
+            <div class="w3-container w3-center w3-round-xlarge w3-teal" style="width:90%">90%</div>
+          </div>
+          <p>Photography</p>
+          <div class="w3-light-grey w3-round-xlarge w3-small">
+            <div class="w3-container w3-center w3-round-xlarge w3-teal" style="width:80%">
+              <div class="w3-center w3-text-white">80%</div>
+            </div>
+          </div>
+          <p>Illustrator</p>
+          <div class="w3-light-grey w3-round-xlarge w3-small">
+            <div class="w3-container w3-center w3-round-xlarge w3-teal" style="width:75%">75%</div>
+          </div>
+          <p>Media</p>
+          <div class="w3-light-grey w3-round-xlarge w3-small">
+            <div class="w3-container w3-center w3-round-xlarge w3-teal" style="width:50%">50%</div>
+          </div>
+          <br>
+
+          <p class="w3-large w3-text-theme"><b><i class="fa fa-globe fa-fw w3-margin-right w3-text-teal"></i>Languages</b></p>
+          <p>English</p>
+          <div class="w3-light-grey w3-round-xlarge">
+            <div class="w3-round-xlarge w3-teal" style="height:24px;width:100%"></div>
+          </div>
+          <p>Spanish</p>
+          <div class="w3-light-grey w3-round-xlarge">
+            <div class="w3-round-xlarge w3-teal" style="height:24px;width:55%"></div>
+          </div>
+           
+          <br>
+        </div>
+      </div><br>
+ 		
+ 
+ <div class="uploadDiv">
+<button id="downLoadAll" class="btn  btn-light">파일 다운 <i class="fa fa-download" aria-hidden="true"></i></button>
+ 
+<form id="fileupload" enctype="multipart/form-data">
+ <span class="btn btn-success fileinput-button">
+  <i class="glyphicon glyphicon-plus"></i>
+     <span>파일 추가</span><!--  onclick="clearThis()" -->
+	<input name="files" type="file"  id="fileUploadBtn" multiple="multiple" onchange="showArea()" />
+	</span>
+	<!-- 각자가 사용할 파일 menuClcode의 value를 지정하면 됩니다-->
+	<input type="hidden" value="FI" name="menuClCode">
+ </form>
+	
+</div>    
+		
+		
+		<div class="FormArea">
+		   <form:form commandName="file" id="fileForm"  method="Post" action="${cPath }/project/${pCode}/file/create">
+		   <div class="sizing">
+			<table class=' template-upload fade image in'>
+			<tbody class='fileSet'> 
+			
+			</tbody>
+			</table>
+			</div>
+			<!-- ex) 일감폼의 경우(일감제출버튼  -->
+			 <button class="btn insertBtn" id="saveBtn">저장</button> 
+		  </form:form>
+ 		</div>
+  	
+	   <form id="filesDownForm" method="post" action="${cPath}/project/${pCode}/file/down/zip">
+	  		<input type="hidden" name="files" id="fileNos"  >	
+	   </form>
+ 
+ </div>
+		<div>
+  </div>
+ 
+  
+  
+  </div>
+  
+  
+  
+ 
+ 
+
+
+<script type="text/javascript">
+var allExpand = $("#allExpand")
+var allCollapse = $("#allCollapse");
+
+
+ function showArea(){
+	 
+	 $(".FormArea").show();
+	$("#saveBtn").show(); 
+ }
+
+
+ 
+
+$("#saveBtn").on("click" , function(){
+	$("#fileForm").submit();
+	
+})
+
+ 
+
+$(allExpand).on("click" , function(){
+	 $.ui.fancytree.getTree("#tree").expandAll(true);
+})
+
+$(allCollapse).on("click" , function(){
+	 $.ui.fancytree.getTree("#tree").expandAll(false);
+})
+
+
+var glyph_opts = {
+		 preset: "bootstrap3",// 팬시트리의 디자인 옵션을 부트스트랩의 아이콘으로 변경
+	        	 map: {  
+	        	  _addClass: "glyphicon",
+	        	  checkbox: "glyphicon-unchecked",
+	        	  checkboxSelected: "glyphicon-check",
+	        	  checkboxUnknown: "glyphicon-expand",  // "glyphicon-share",
+	        	  dragHelper: "glyphicon-play",
+	        	  dropMarker: "glyphicon-arrow-right",
+	        	  error: "glyphicon-warning-sign",
+	        	  expanderClosed: "glyphicon-chevron-right",  // glyphicon-plus-sign
+	        	  expanderLazy: "glyphicon-chevron-right",  // glyphicon-expand
+      	          expanderOpen: "glyphicon-chevron-down",
+	        	  loading: "glyphicon-refresh fancytree-helper-spin",
+	        	  nodata: "glyphicon-info-sign",
+	        	  noExpander: "",
+	        	  radio: "glyphicon-remove-circle",  // "glyphicon-unchecked",
+	        	  radioSelected: "glyphicon-ok-circle",  // "glyphicon-check",
+	        	  // Default node icons.
+	        	  // (Use tree.options.icon callback to define custom icons based on node data)
+	        	  doc: "glyphicon-file",
+	        	  docOpen: "glyphicon-file",
+	        	  folder: "glyphicon-folder-close",
+	        	  folderOpen: "glyphicon-folder-open"  
+	        	}
+}
+
+
+$(function(){
+	
+	
+	
+	
+	var tree = $("#tree").fancytree("getTree");
+	
+	 $.ui.fancytree.getTree("#tree").expandAll(true);
+	
+	$("#tree span.fancytree-title").tooltip(); //어댑터에서 tooltip을 타이틀로 설정해줬음 
+	
+	var tree = $.ui.fancytree.getTree("#tree");
+	
+	
+	 $("input[name=search]").on("focus", function(e){
+			$.ui.fancytree.getTree("#tree").expandAll(true);
+	 })
+	 
+	 $("input[name=search]").on("focusout", function(e){
+			$.ui.fancytree.getTree("#tree").expandAll(false);
+	 })
+	 
+	 $.ui.fancytree.getTree("#tree").expandAll(false);
+	 
+	 
+	 $("input[name=search]").on("keyup", function(e){
+		 
+	      	var n,
+	        tree = $.ui.fancytree.getTree(),
+	        args = "autoApply autoExpand fuzzy hideExpanders highlight leavesOnly nodata".split(" "),  
+	        opts = {},
+	        filterFunc = $("#branchMode").is(":checked") ? tree.filterNodes : tree.filterNodes,
+	        match = $(this).val();
+			
+			opts.mode = "hide"
+	      if(e && e.which === $.ui.keyCode.ESCAPE || $.trim(match) === ""){
+	        $("button#btnResetSearch").click();
+	        return;
+	      }
+	      
+	      var rex = new RegExp(match , "i"); //검색창의 값과 일치하는 노드 있는지 확인
+
+	      $.ui.fancytree.getTree("#tree").filterNodes(function(node) {
+	    	 n  =  filterFunc.call(tree, match, opts);
+	        return rex.test(node.title) ;
+	      });
+	  
+	     
+	   
+	     //리셋버튼 가능하도록 만들고 
+	     $("button#btnResetSearch").attr("disabled", false);
+	      $("span#matches").text("(" + n + " matches)"); //일치하는 수를 형성함
+	    }).focus();
+
+	    $("button#btnResetSearch").click(function(e){
+	      $("input[name=search]").val("");
+	      $.ui.fancytree.getTree("#tree").expandAll(false);
+	      $("span#matches").text("");
+	      
+	      tree.clearFilter(); //검색창 초기화 
+	    }).attr("disabled", true);
+
+	    
+	    
+})
+ 
+	
+	$("#tree").fancytree({
+		  checkbox: true,
+		  selectMode :3, //여러개 선택가능하도록 
+		  autoScroll: true,
+		  extensions: ["filter" , "glyph" ],
+		  quicksearch: true,
+	      glyph:  glyph_opts,  //아이콘 새롭게 만들기 
+	        source:{
+	    		url:location.pathname,
+	    		cache:true,
+	    		 
+	    	} 
+	    	,tooltip: function(event, data) { 
+	    	    
+    	      },
+	    	lazyLoad: function(event, data){
+		      var node = data.node;
+		      data.result = {
+		    	url: location.pathname,
+		        data: {clCode:node.key},
+		        cache: false
+		      };
+		} , 
+		activate: function(event, data){
+		     var node = data.node;
+			 var attatch = node.adaptee;
+			/*  console.log(node);  
+			 console.log(attatch);   */
+	 
+		    },
+		    click : function(event, data){
+		    	
+		    	
+		    	 var node = data.node;
+				 var attatch = node.adaptee;
+		    	 
+		     
+		    },
+		    filter: {
+		    	 autoApply: true,   // Re-apply last filter if lazy data is loaded
+		         autoExpand: true, // 포함하는 거 있을 경우 자동으로 열기
+		         counter: true,     // Show a badge with number of matching child nodes near parent icons
+		         fuzzy: false,      // Match single characters in order, e.g. 'fb' will match 'FooBar'
+		         hideExpandedCounter: true,  // Hide counter badge if parent is expanded
+		         hideExpanders: false,       // Hide expanders if all child nodes are hidden by filter
+		         highlight: true,   // Highlight matches by wrapping inside <mark> tags
+		         leavesOnly: false, // Match end nodes only
+		         nodata: true,         // Display a 'no data' status node if result is empty
+				 mode: "hide"       // Grayout unmatched nodes (pass "hide" to remove unmatched node instead)
+				// mode: "dimm"       // Grayout unmatched nodes (pass "hide" to remove unmatched node instead)
+			},
+			select :function(event , data){
+ 					if(data.node.folder==true){
+ 						// data.node.setExpanded(true);
+ 						 var node = data.node;
+ 						var selRootNodes = data.tree.getSelectedNodes(true);
+ 				        // ... and convert to a key array:
+ 				        var selRootKeys = $.map(selRootNodes, function(node){
+ 				        	console.log(node.key)
+ 				          return node.key;
+ 				        });
+ 					/* 	var selKeys = $.map(data.tree, function(node){
+ 							 
+							  return node.key; 
+					}); */
+ 				 	/* var selKeys = $.map(data.tree.getSelectedNodes(), function(node){
+ 							 return node.key;
+ 					});  */ 
+					 //console.log(data.node.children)
+					// $(data).each(function(index, item){
+						   // console.log(item.node.children)
+							//console.log(item.children)
+						}
+ 				} 
+ 				  
+			});	//닫기
+				 
+ 
+ 
+ //================================================
+	 var filesDownForm = $("#filesDownForm")
+	 var fileNos = $("#fileNos")
+	 var send = false;
+ 	 var fileSize = 0 ; 
+	 $("#downLoadAll").on("click" , function(){
+		 var trees =	 $.ui.fancytree.getTree("#tree")
+		 var selectItems = [];
+		  $(trees).each(function(index, item){
+		  		var selKeys = $.map(item.getSelectedNodes(), function(node){
+					 //console.log(node.key)//WO
+					// console.log(node.data.adaptee)	
+					 var adaptee =node.data.adaptee;
+					  
+					 if(adaptee.fileNo!=null){
+					 	fileSize += adaptee.fileSize;
+					 	selectItems.push(adaptee.fileNo);
+					 }
+				})
+					 
+			});  //for문  tree 부분 끝
+				
+		  if(fileSize>=104857600){//
+			  Swal.fire({
+					 title: "최대 크기 초과",
+					  text: "100메가 이상의 파일은 개별 다운로드해야합니다",
+					  icon: "error",
+					  button: "OK",
+					}) 
+			
+			}else{
+				  send = true
+				if(selectItems.length==1){
+					console.log(selectItems.length)
+					location.href="${cPath}/project/${pCode}/file/down/"+selectItems[0]
+				}else{
+					fileNos.val(selectItems);
+	 				if(send == true){
+					  $("#filesDownForm").submit();
+	 					 
+	 				}
+				}
+				
+			}  
+		  
+	 }); 
+		  
+		
+		  
+				
+	 
+ //================================================
+ 
+let uploadForm = $("#fileupload")[0];
+let fileSet = $(".fileSet");
+let fileArea = $("#fileArea");  
+let tbody = $(".fileSet");
+ 
+// 파일 업로드를 위한  url 변경 마시오 
+
+ 	$("#fileupload").fileupload({
+	 		url:  "${pageContext.request.contextPath }/project/${pCode}/file/fileUpload",
+			autoUpload: true,
+			sequentialUploads: true,
+			dataType: 'json',
+			add: function(e, data){
+				 var isValid = true;
+				 var uploadFile = data.files;
+				 if(uploadFile.size > 5000000){
+					 alert('파일 용량은 5메가를 초과할 수 없습니다.');
+					 isValid = false;
+				 }
+				 
+				 if (isValid) {
+			          data.submit();
+				}
+			 }, progressall: function(e,data) {
+			        var progress = parseInt(data.loaded / data.total * 100, 10);
+			        $('#progress .bar').css(
+			          'width',
+			          progress + '%'
+			        );
+			      }, done: function (e, data) {
+			    	  trTags = [];
+			    	 let fileList  = data.result.files[0];
+			 			 $(fileList).each(function(index, file){
+			 				trTags.push(makeFileBtn(file));
+			 			 });
+			 		  
+			 			fileSet.append(trTags);//여기서 테이블에 넣어주고 있습니다
+			 		  	 
+			      }, fail: function(e, data){
+			        alert('서버와 통신 중 문제가 발생했습니다');
+			        foo = data;
+			      }
+			    });
+			  
+			
+		 
+ 	
+ function makeFileBtn(file){
+	 /*
+	 생성될 경우 넘겨질 vo의 수를 증가 시켜줌
+	 */
+if( $("tr").hasClass("fileName")==true){
+	 				  
+	 				 let fileName = $(".fileName").last();
+	 				 
+	 				 let no =	parseInt($(fileName).data("no")) +1 ;
+	 /*
+	 workFileList는 workVO에 파일을 담기위해 추가한 workFile을 담기위한 List 입니다.
+	 workFileList 는 각자의 파일 명을 담는 VO의 파일 명 변수 를 입력하시면 됩니다  
+	 workFileList[" + no +"].workFileSavedNm" 
+	.workFileSavedNm 의 명은 각 파일 vo의 변수명을 의미합니다 저장명과 파일이름 파일 저장 일자 삭제 여부 그리고 테이블에는 없지만 TEMP 여부를 담을 변수명을추가해주세요h
+	 				 
+	 $("<input type='hidden'>").prop("name","workFileList[" + no +"].workFileSavedNm").prop("value", file.fileSavedNm)
+	 */
+	 				return	$("<tr class='fileName'>").append(
+	 						$("<span >").html(file.fileNm+ " &nbsp; &nbsp;")
+	 								   .append(
+	 						$("<input type='hidden'>").prop("name","attatchList[" + no +"].fileSavedNm").prop("value", file.fileSavedNm).prop("id" , file.fileSavedNm), 
+	 						 $("<input type='hidden'>").prop("name","attatchList[" + no +"].fileRgsde").prop("value", file.fileRgsde),
+	 						 $("<input type='hidden'>").prop("name","attatchList[" + no +"].tempAt").prop("value",'0').prop("class" , "attatchtemptAt") //이대로 업데이트 시 템프파일 아님으로 업데이트 됨
+	 								   ).append(
+	 										   $("<button type='button' >").prop("class","deleteBtn").append("<i class='glyphicon glyphicon-ban-circle'></i>")
+	 								   	)
+	 								).data("no" ,  no);
+	 			  
+}else{
+	 				 return	$("<tr class='fileName'>").append(
+	 						$("<span >").html(file.fileNm+ " &nbsp; &nbsp;")
+	 								   .append(
+	 					     $("<input type='hidden'>").prop("name","attatchList[0].fileSavedNm").prop("value", file.fileSavedNm).prop("id" , file.fileSavedNm), 
+	 						 $("<input type='hidden'>").prop("name","attatchList[0].fileRgsde").prop("value", file.fileRgsde),
+	 						 $("<input type='hidden'>").prop("name","attatchList[0].tempAt").prop("value",'0').prop("class" , "attatchtemptAt")
+	 								   ).append(
+	 										   $("<button type='button'>").prop("class","deleteBtn").append("<i class='glyphicon glyphicon-ban-circle'></i>")
+	 								   	)
+	 								).data("no" , "0")
+	 			 		}
+	 
+	 
+	 
+ 			  }
+ 			
+ 			  
+ 
+  
+  	$(tbody).on("click", ".deleteBtn" , function(){
+  			/* console.log($(this).parents("tr")[0]) */
+  		 let  value = $(this).parents("tr")[0]
+  		 $(value).find(".attatchtemptAt").val("1") //템프파일 여부 1 로 변경하여 템프 파일으로 설정함
+  		 $(value).find(".attatchtDelAt").val("1") // 파일 삭제 여부를 1로 변경하여 파일 삭제된 파일로 설정함
+ 		 $(value).attr('style', "display:none;");
+  	});
+ 		  
+  	
+ 
+
+       
+</script>
+   
+    
+</body>
+</html>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.activity.dao.MyTimelineDAO"> 
+	<select id="selectPrjctTimeline"  parameterType="kr.or.ddit.activity.vo.MyTimelineVO" resultType="kr.or.ddit.activity.vo.MyTimelineVO">
+		SELECT *
+		FROM(SELECT TLINE_CODE, PRJCT_NO, T.MEM_ID, MAKENAMEFORMAT(MEM_FNM, MEM_LNM, T.MEM_ID) MEM_NAME,
+	       	   MAKEDATEFORMAT(TLINE_RGSDE) TLINE_RGSDE, MAKETIMEFORMAT(TLINE_RGSDE) TLINE_RGSDE_TIME,
+        	   T.CMD_CL_CODE, CODE_NM , T.MENU_CL_CODE, MENU_CL_NM, T.WORK_CODE , T.BO_NO , T.ISSUE_NO,
+      	 <choose>   
+			<when test="@org.apache.commons.lang3.StringUtils@isNotBlank(termDate)">
+      	 	   MAKEDATEFORMAT(TO_DATE(#{termDate})- (SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00101' AND SETUP_CN_NO = 3)) STARTDE,
+      	 	   MAKEDATEFORMAT(TO_DATE(#{termDate})) ENDDE,
+      	 	</when>  
+			<otherwise>
+				MAKEDATEFORMAT(SYSDATE- (SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00101' AND SETUP_CN_NO = 3)) STARTDE,
+      	 	   MAKEDATEFORMAT(SYSDATE) ENDDE,
+			</otherwise>
+		</choose>
+        	  (CASE T.MENU_CL_CODE WHEN 'WO'THEN (SELECT WORK_SJ FROM WORK W WHERE W.WORK_CODE = T.WORK_CODE)
+                             WHEN 'IS' THEN (SELECT ISSUE_SJ FROM ISSUE I WHERE I.ISSUE_NO = T.ISSUE_NO)
+                             ELSE (SELECT BO_SJ FROM BOARD I WHERE BO_NO = T.BO_NO) 
+                            END) SUBJECT 
+		FROM TIMELINE T  LEFT OUTER JOIN MEM M ON (T.MEM_ID = M.MEM_ID)
+	                LEFT OUTER JOIN CMMN_CODE_DETAIL C ON(T.CMD_CL_CODE = C.CODE_NO)
+	                INNER JOIN MENU_CL L ON(T.MENU_CL_CODE = L.MENU_CL_CODE)
+		WHERE T.PRJCT_NO = #{prjctNo}
+		AND T.CMD_CL_CODE != 'T00103'  
+		<choose>  
+			<when test="@org.apache.commons.lang3.StringUtils@isNotBlank(termDate)">
+			AND T.TLINE_RGSDE BETWEEN (TO_DATE(#{termDate})-(SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00101' AND SETUP_CN_NO = 3)) AND TO_DATE(#{termDate})
+			</when> 
+			<otherwise>
+			AND T.TLINE_RGSDE BETWEEN (SYSDATE-(SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00101' AND SETUP_CN_NO = 3)) AND SYSDATE
+			</otherwise>
+		</choose>
+			ORDER BY T.TLINE_RGSDE DESC
+		   )B  
+		WHERE SUBJECT IS NOT NULL
+	</select>
+	<select id="selectTermDate" parameterType="String" resultType="kr.or.ddit.activity.vo.MyTimelineVO">
+		select 
+		<choose>   
+			<when test="@org.apache.commons.lang3.StringUtils@isNotBlank(termDate)">
+			 MAKEDATEFORMAT(to_date(#{termDate})- (SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00101' AND SETUP_CN_NO = 3)) STARTDE,
+       		 MAKEDATEFORMAT(to_date(#{termDate})) ENDDE
+       		</when>  
+			<otherwise> 
+		 	 MAKEDATEFORMAT(SYSDATE- (SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00101' AND SETUP_CN_NO = 3)) STARTDE,
+      	 	 MAKEDATEFORMAT(SYSDATE) ENDDE
+			</otherwise>
+		</choose>
+		from dual 
+	</select>
+</mapper>

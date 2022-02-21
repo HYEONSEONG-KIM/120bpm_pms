@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mypage.dao.MypageDAO">
+	<select id="selectMyProjectCount" parameterType="string" resultType="int">
+		SELECT COUNT(*)
+		FROM PROJECT_MEM M INNER JOIN PROJECT P ON(M.PRJCT_NO = P.PRJCT_NO)
+		WHERE M.MEM_ID = #{memId}
+	<![CDATA[
+		AND TO_DATE(P.PRJCT_BEGINDE, 'yyyy-mm-dd') <=  TO_DATE(SYSDATE, 'yyyy-mm-dd')
+		AND TO_DATE(P.PRJCT_ENDDE, 'yyyy-mm-dd') >= TO_DATE(SYSDATE, 'yyyy-mm-dd')
+	]]> 
+	</select>
+	
+	<select id="selectMyWorkCount" parameterType="string" resultType="int">
+		SELECT COUNT(*)
+		FROM WORK 
+		WHERE MEM_ID = #{memId}
+	<![CDATA[
+		AND TO_DATE(WORK_BGNDE, 'yyyy-mm-dd') <= TO_DATE(SYSDATE, 'yyyy-mm-dd')
+		AND TO_DATE(WORK_ENDDE, 'yyyy-mm-dd') >= TO_DATE(SYSDATE, 'yyyy-mm-dd')
+	]]>
+		AND (WORK_REQ_STTUS_CODE != 'W00302' OR WORK_REQ_STTUS_CODE IS NULL)
+	</select>
+	
+	<select id="duetodaywork" parameterType="string" resultType="int">
+		SELECT COUNT(*)
+		FROM WORK 
+		WHERE MEM_ID = #{memId}
+		AND TO_DATE(WORK_ENDDE, 'yyyy-mm-dd')= TO_DATE(SYSDATE, 'yyyy-mm-dd')
+		AND (WORK_REQ_STTUS_CODE != 'W00302' OR WORK_REQ_STTUS_CODE IS NULL)
+	</select>
+	
+	
+	<sql id="searchMyWorkFrag">
+		FROM WORK W INNER JOIN WORK_CATEGORY C ON(W.CTGRY_CODE = C.CTGRY_CODE)
+					INNER JOIN PROJECT P ON(W.PRJCT_NO = P.PRJCT_NO)
+		WHERE W.MEM_ID = #{memId}
+		AND (W.WORK_REQ_STTUS_CODE != 'W00302' OR W.WORK_REQ_STTUS_CODE IS NULL)
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailSearch.workSttusCode) ">
+			<if test="detailSearch.workSttusCode eq 1">
+		        AND INSTR(W.WORK_STTUS_CODE, 'W00101') > 0 
+			</if>  
+			<if test="detailSearch.workSttusCode eq 2">
+		        AND INSTR(W.WORK_STTUS_CODE, 'W00102') > 0 
+			</if> 
+			<if test="detailSearch.workSttusCode eq 3">
+		        AND INSTR(W.WORK_STTUS_CODE, 'W00103') > 0  
+			</if>
+		</if>  
+	</sql>
+	
+	<select id="selectTotalRecord" parameterType="kr.or.ddit.mypage.vo.MyPagingVO" resultType="int">
+		SELECT COUNT(*)
+		<include refid="searchMyWorkFrag"/>
+	</select> 
+	 
+	<select id="selectMyWorkList" parameterType="kr.or.ddit.mypage.vo.MyPagingVO" resultType="kr.or.ddit.mypage.vo.MyWorkVO">
+		SELECT B.*
+		FROM(
+			SELECT ROWNUM AS RNUM, A.*
+				FROM(
+			SELECT W.PRJCT_NO, P.PRJCT_NM, W.CTGRY_CODE, C.CTGRY_NM, WORK_CODE, WORK_SJ, 
+			MEM_ID,
+			MAKENAMEFORMAT((SELECT MEM_FNM FROM MEM M WHERE M.MEM_ID = W.MEM_ID),(SELECT MEM_LNM FROM MEM M WHERE M.MEM_ID = W.MEM_ID),MEM_ID) MEM_NAME,   
+			MAKEDATEFORMAT(WORK_BGNDE) WORK_BGNDE, 
+			MAKEDATEFORMAT(WORK_ENDDE) WORK_ENDDE ,
+			MAKEDATEFORMAT(WORK_RGSDE) WORK_RGSDE, WORK_REQ_STTUS_CODE, 
+            (SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CODE_NO = W.WORK_REQ_STTUS_CODE) REQ_STTUS_NM,
+			WORK_RETURN_WHY, UPPER_WORK_CODE,(SELECT K.WORK_SJ FROM WORK K WHERE K.WORK_CODE = W.UPPER_WORK_CODE) UPPER_SJ,
+            WORK_STTUS_CODE,(SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CODE_NO = W.WORK_STTUS_CODE) STTUS_NM,
+            WORK_PRIORT_CODE, (SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CODE_NO = W.WORK_PRIORT_CODE) PRIORT_NM,
+			WORK_PRGS_DGREE_POINT, WORK_OTHBC_AT, 
+			TO_CHAR(WORK_UPDTDE,(SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00102' AND SETUP_CN_NO = 1)) WORK_UPDTDE 
+			<include refid="searchMyWorkFrag"/> 
+			ORDER BY W.WORK_ENDDE
+			) A 
+		) B 
+		WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+	 
+	
+	<sql id="searchWorkBkmkFrag">
+		FROM WORK W INNER JOIN WORK_CATEGORY C ON(W.CTGRY_CODE = C.CTGRY_CODE)
+					INNER JOIN PROJECT P ON(W.PRJCT_NO = P.PRJCT_NO)
+                    INNER JOIN WORK_BKMK B ON(W.WORK_CODE = B.WORK_CODE)
+        	WHERE B.MEM_ID = #{memId}
+	</sql>
+	
+	<select id="selectTotalRecord2" parameterType="kr.or.ddit.mypage.vo.MyPagingVO" resultType="int">
+		SELECT COUNT(*) 
+		<include refid="searchWorkBkmkFrag"/> 
+	</select>
+
+	<select id="selectWorkBkmkList" parameterType="kr.or.ddit.mypage.vo.MyPagingVO" resultType="kr.or.ddit.mypage.vo.MyWorkVO">
+		SELECT B.*
+		FROM(
+			SELECT ROWNUM AS RNUM, A.*
+				FROM(
+			SELECT W.PRJCT_NO, P.PRJCT_NM, W.CTGRY_CODE, C.CTGRY_NM, W.WORK_CODE, WORK_SJ,
+			B.MEM_ID, (SELECT MEM_FNM FROM MEM M WHERE M.MEM_ID = W.MEM_ID) MEM_FNM,  
+			(SELECT MEM_LNM FROM MEM M WHERE M.MEM_ID = W.MEM_ID) MEM_LNM,
+            WORK_STTUS_CODE,(SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CODE_NO = W.WORK_STTUS_CODE) STTUS_NM
+			<include refid="searchWorkBkmkFrag"/> 
+			ORDER BY W.WORK_ENDDE
+			) A 
+		) B 
+		WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+	
+	<delete id="deleteWorkBkmks" parameterType="kr.or.ddit.mypage.vo.MyWorkBkmkVO">
+		DELETE FROM WORK_BKMK
+		WHERE MEM_ID = #{memId, jdbcType=VARCHAR}
+		AND WORK_CODE IN  
+		<foreach collection="delWorkCodes" item="delWC"  open="(" separator="," close=")">
+			#{delWC}
+		</foreach>
+	</delete>
+	
+	<select id="totalPushMsgRecord" parameterType="kr.or.ddit.pushMsg.vo.PushPagingVO" resultType="int">
+		SELECT COUNT(*) FROM PUSH_MSG WHERE MEM_ID = #{memId}
+	</select>
+	
+	<select id="myPushMsgList" parameterType="kr.or.ddit.pushMsg.vo.PushPagingVO" resultType="kr.or.ddit.pushMsg.vo.PushMsgVO">
+		SELECT A.*
+		FROM (
+			SELECT ROWNUM RNUM, B.*
+			FROM (
+				SELECT PUSH_CODE, PUSH_MESSAGE, MEM_ID,
+                MAKEDATEFORMAT(CREATEDE)  || ' ' ||
+                MAKETIMEFORMAT(CREATEDE) CREATEDE  
+				FROM PUSH_MSG
+				WHERE MEM_ID = #{memId}
+				ORDER BY CREATEDE DESC
+				) B
+			) A
+		WHERE RNUM BETWEEN #{startRow}  AND #{endRow}
+	</select>
+	
+	<delete id="deleteAllPush" parameterType="string">
+		DELETE FROM PUSH_MSG WHERE MEM_ID = #{memId}
+	</delete>
+	
+	<delete id="deleteOnePush" parameterType="int">
+		DELETE FROM PUSH_MSG WHERE PUSH_CODE = #{pushCode}
+	</delete>
+</mapper>
+
+
+
+
+
+
+
+

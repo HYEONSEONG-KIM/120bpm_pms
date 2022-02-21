@@ -1,0 +1,33 @@
+일감 
+1) 일감 등록 시 
+kr.or.ddit.work.service.WorkService.addWork(
+workVO.getMemIds(); 로 관람자 아이디 받아오시면 됩니다
+
+2) 일감 수정 시
+kr.or.ddit.work.service.WorkService.updateWork
+workVO.getMemIds(); 로 관람자 아이디 받아오시면 됩니다
+
+3) 일감 승인시
+kr.or.ddit.work.service.workService.acceptAllWork 
+승인하는 쿼리 memIds에 해당하는 일감이 승인된 사람의 memId 넣어둠
+ok 일 경우 처리
+
+4) 일감 반려시 
+kr.or.ddit.work.service.workService.refuseWork
+OK일 경우 work의 memIds 에 관람자 id 담아두겠습니다- 0번째에 담긴다고 생각하시면 됩니다
+
+5) 이슈 등록 시 
+kr.or.ddit.issue.service.IssueService.addIssue
+이슈 등록시 이슈 OK일 경우 issue의 memIds 에 관람자 id 담아두겠습니다
+
+6) 이슈 수정 시
+kr.or.ddit.issue.service.IssueService.updateIssue
+이슈 등록시 이슈 수정일 경우 issue의 memIds 에 관람자 id 담아두겠습니다
+
+7. 이슈 댓글 작성 시
+kr.or.ddit.issue.service.IssueRepService.addIssueRep
+- 이슈의 관람자와 작성자를 memIds에 담아두겠습니다.
+
+8. 이슈 댓글 수정 시 
+kr.or.ddit.issue.service.IssueRepService.addIssueRep
+- 이슈의 관람자와 작성자를 memIds에 담아두겠습니다.

@@ -1,0 +1,134 @@
+@charset "UTF-8";
+.table td, .table tr {  
+	line-height: normal; 
+	cursor: default;
+} 
+
+.table  td, .table th {
+	border-top: none; 
+	border-bottom: 1px solid #dee2e6;
+} 
+
+hr { 
+	border: 1px solid #42B4E6;
+	margin-bottom: 0;
+}
+#idInput {  
+	border: none; 
+}
+
+button {
+	cursor: pointer;
+}
+  
+.table th {
+	text-align: left; 
+	border-right: 1px solid #dee2e6;
+	background: #f0f9fc;
+}
+
+#table1 td, .right-border {
+	border-right: 1px solid #dee2e6;
+}
+/* .x_panel{ */
+/* 	width : 45%; */
+/* }   */
+.x_title {
+	border-bottom: none;
+	margin-bottom: 0;
+	margin-top: 10px;
+	padding : 0;
+}
+
+.x_title span { 
+	font-size: 1.4rem;
+	color : #333333;
+}
+
+.w1 {
+	width: 10%;
+}
+
+.w3 {
+	width: 30%;
+}
+
+.w5 {
+	width: 50%;
+}
+
+.w7 {
+	width: 70%;
+}
+
+.w9 {
+	width: 90%;
+}
+
+.w10 {
+	width: 100%;
+}
+
+
+#passUpdateForm .popOuterBox {
+	top: 30%;
+	left: 45%;
+	width: 500px;
+}
+
+#passUpdateForm .popInnerBox {
+	width: 500px;
+	left: 45%;
+	height: 400px;
+}
+
+hide, #updateSubmitBtn {
+	display: none;
+} 
+
+.waku {
+	width: 8%;
+	text-align: right;
+	padding-right: 1%;
+}
+
+label.error {
+	margin-left: 10px; 
+	color: red;	
+	font-size: 15px;
+}      
+#careerTable input[type=checkbox]{
+	margin-left: 10px;
+	width :20px;       
+	height :20px;   
+	vertical-align: middle;
+}
+.modal-dialog {
+    max-width: 80%;
+    }
+.modal-dialog table .hrtr {
+	border-top: 2px solid #42B4E6;
+} 
+#exampleModal{
+	pointer-events : none;
+}
+.modal-header{
+	flex-direction: column;
+	align-items: unset;
+}
+.careerTable input[type=checkbox]{
+	width : 17px;
+	height: 17px;
+	vertical-align: middle;
+}
+.minusBtn{
+	float : right;
+	font-weight: 1000; 
+}   
+#table1, #table1_1{
+	width : 50%;  
+	height : 300px; 
+} 
+#table2 tr:nth-child(5n){
+	border-bottom: 2px solid #42B4E6;	
+}

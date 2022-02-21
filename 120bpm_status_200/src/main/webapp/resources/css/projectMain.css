@@ -1,0 +1,242 @@
+@charset "UTF-8";
+body{
+/* 	letter-spacing: -0.02em; */
+}
+#stateColorArea{
+	display: grid;
+	grid-template-columns : 1fr 1fr 1fr;
+	width: 20%;
+}
+.stateColor{
+	border: 1px solid black;
+	width: 13px;
+	height: 13px;	
+	margin: 5px 5px 0px 5px; 
+	float: left;
+}
+.normal{
+	background-color: #0DCAF0;
+}
+.warnning{
+	background-color: #FFC107;
+}
+.danger{
+	background-color: #DC3545;
+}
+
+.colorText{
+	float: left;
+	margin-left: 5px;
+	font-weight: bold;
+}
+
+.progress { 
+	display: inline-block;
+	height: 20px; 
+	width : 80%;  
+	margin : 0;    
+	vertical-align: middle; 
+	border-radius: 50px;
+}     
+.progress-bar{ 
+	background-color: #42b4e6;  
+	border-radius: 50px;  
+}
+#perText{
+	color: #42b4e6;  
+	text-align: center; 
+	margin : 0;
+	font-weight: bolder;
+	font-size: large;
+}      
+.progressDiv{          
+	border-radius: 20px; 
+	background : white;
+	padding : 10px 5px;     
+	margin-bottom: 20px;
+	border : 1px solid #E6E9ED;
+}     
+.x_title {
+	border-bottom : 1px solid #42B4E6;
+}  
+.x_title h2 {
+	font-weight: bolder;
+}  
+.x_panel{   
+	box-sizing: border-box; 
+	border-radius: 20px;  
+	height : 380px; 
+}   
+#olTable td{      
+	width : 100%;
+	font-size :medium;
+	font-weight: bold; 
+	color : #333333;
+	padding : 5px;
+} 
+#olTable th{ 
+	font-size :medium;
+	width : 35%;
+	color : #6e6e6e; 
+	padding : 5px; 
+}    
+   
+.mems table{ 
+	border-collapse: collapse; 
+	border-bottom : 1px dashed lightblue;
+	margin-bottom: 10px;
+	font-size: medium; 
+}     
+.mems table td{ 
+	padding-bottom: 1%; 
+} 
+.mems table .mailTd{    
+	width : 60%;    
+}   
+.mems table th{ 
+	width : 20%;     
+} 
+#tableDiv{         
+	height : 270px; 
+	overflow: auto; 
+}    
+.custom{
+	align-items: center;
+    justify-content: space-around;  
+}   
+.custom .customBtn{
+ 	transition :   all 0.5s ease-in-out;
+ 	width : 55px;
+}      
+
+#gaugeChart{      
+	margin-left: 15%; 
+}  
+#selectCtgry{
+	font-size: medium; 
+}  
+svg{
+	margin-top: 20px; 
+} 
+ul.customList{
+	list-style: none; 
+	font-size: medium; 
+	font-weight: bold; 
+}  
+ul.customList li:hover{
+	background-color: yellow;
+	text-decoration: underline; 
+} 
+ul.customList li:before {
+    content: "➕ ";
+    display: inline-block; 
+    vertical-align: middle;
+    padding: 7px 5px 10px;   
+}       
+/* 우선순위 높음 */
+.W00201 {  
+   background: rgba(247, 96, 97, 0.4)!important;
+   font-weight: 600;
+}
+/* 우선순위 낮음 */
+.W00204 {  
+   background-color: #BEEBFD;
+}
+.table{ 
+/* <!-- 테이블 --> */
+	width : 100%;  
+	table-layout: fixed;
+	font-size: 15px;
+}    
+.table tbody tr:hover{
+	background: rgba(247, 222, 140, 0.3)!important;
+}  
+.table th{ 
+ 	font-size: 13px;
+ 	line-height: normal; 
+} 
+.ellipsis {
+/* <!-- ...으로 나타나야 하는 곳--> */
+ width:40%;   
+ white-space: nowrap;     
+ overflow:hidden;    
+ text-overflow: ellipsis;
+ }   
+.authorNm{
+	color : #42B4E6;
+	font-weight: bold;
+}  
+ 
+.bb-legend-item, .bb svg,.bb-chart-arcs-gauge-title{ 
+	font-family:'Noto Sans KR', sans-serif !important;
+	font-size: medium; 
+}      
+.bb-chart-arcs-gauge-min, .bb-chart-arcs-gauge-max{
+	font-size: medium;
+} 
+#sumry .scroll{     
+	height : 65px;
+	overflow: auto;
+}
+#prjctNm .scroll{
+	height : 47px;
+	overflow: auto;
+}
+.pointer{
+	cursor : pointer;
+}
+.panel_toolbox>li>a{
+	font-size: 17px; 
+	color : #6e6e6e;
+} 
+.feed{  
+	height: 280px; 
+}
+.feed h2{  
+	font-size: x-large;   
+}     
+.feed p{  
+	font-size: 1.3em;
+	height: 67%; 
+	overflow: auto;
+	word-break: break-all;
+	border-top: 1px solid #c7c7c7;
+	border-bottom: 1px solid #c7c7c7;
+} 
+.feed span{
+	position: absolute;
+	bottom: 0; 
+} 
+.col-md-6 {
+	-ms-flex: 0 0 48%;
+	flex: 0 0 48%;  
+	max-width: 48% 
+} 
+#proflDiv{
+	width : 55px;
+	height : 55px;
+	display: block;
+	overflow: hidden;
+	border-radius: 50%;
+}
+#proflDiv img{
+	display: block; 
+	max-width: 55px;   
+	max-height: 80px;  
+}   
+#topPar{
+	display: grid;
+	grid-template-columns : 7.5fr 1fr
+	
+}
+
+#milestoneImg{
+	height: 80px;
+	width: 80px;
+	margin-left: -25px;
+	
+}
+
+#cont3, #cont4{
+	margin-bottom : 0;	
+}

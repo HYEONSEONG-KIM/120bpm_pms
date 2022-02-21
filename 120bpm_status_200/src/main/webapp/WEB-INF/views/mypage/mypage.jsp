@@ -1,0 +1,657 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<%@ taglib uri="http://www.springframework.org/security/tags"  prefix="security"%>
+<style>
+.circleDiv {
+	border-radius: 30px;
+	height: 170px;
+	width: 200px;
+	background-color: white; 
+	display: inline-flex;
+	margin : 0 50px; 
+	text-align: center;
+	flex-wrap: wrap;
+	justify-content: center;
+}
+.circleDiv div{
+	margin : auto;
+	color : black; 
+	font-size: 1rem;
+} 
+em{ 
+	font-weight: bold;
+	font-size: 2rem;
+	color : #42B4E6;
+} 
+#colDiv{ 
+	font-size: 15px;
+} 
+#colSet{
+	border: 1px solid grey;
+	padding : 10px 10px 0;
+	position: absolute; 
+	right : 0;
+	background: white;
+	z-index: 200; 
+}      
+
+#colSet ul{
+	border: 1px solid grey;
+	list-style-type: none;	
+	padding : 0;
+	cursor: pointer;
+}
+#colSet li{
+	padding : 3px;
+}
+#colSet li:hover, #colSet li:active{
+	background-color: lightblue;
+}
+#searchUI{
+    align-items: center;
+}
+.grey{ 
+	color : grey;
+}
+#colSetBtn{
+	width : 30px;
+	height : 30px;
+	padding : 0;
+}
+.table{
+	margin-bottom: 0;
+}
+.table tfoot td{
+	padding : 30px 0 0;
+}
+.x_title {
+	border-bottom : 3px solid #42B4E6;
+	margin-bottom: 10px;
+	margin-top: 10px;
+	padding : 0;
+}
+.bold{
+	font-weight: bolder;
+	font-size: 1.3rem;
+} 
+.light{ 
+	color : grey;
+} 
+/* .ellipsis{  */
+/*  white-space: nowrap;         */
+/*  overflow:hidden;      */ 
+/*  text-overflow: ellipsis; */
+/* } */
+[data-tooltip-text]:hover {
+	position: relative;
+}  
+[data-tooltip-text]:hover:after {
+	content: attr(data-tooltip-text);
+	
+    position: absolute;
+	bottom: 100%;
+	right: 0; 
+     
+    background-color: rgba(0, 0, 0, 0.8);
+	color: #FFFFFF; 
+	font-size: 13px;
+	padding: 7px 12px;
+	width: auto;  
+ 
+	z-index: 9999; 
+}
+.table th {
+	padding : 0;
+}
+.pointer{
+	cursor: pointer;
+}
+</style>
+<security:authentication property="principal.adaptee" var="authMember"/> 
+ 
+<div class="d-flex justify-content-center">
+	<div class="circleDiv">
+		<div>
+			<span>진행중인 프로젝트</span><br>
+			<span><em>${pjctCount }</em> 건</span>
+		</div>
+	</div>
+	<div class="circleDiv lightblue">
+		<div>
+			<span>진행중인 일감</span><br>
+			<span><em>${workCount }</em> 건</span>
+		</div>
+	</div>
+	<div class="circleDiv lightgreen">
+		<div>
+			<span>오늘 마감 일감</span><br> 
+			<span><em>${duetodayCount }</em> 건</span> 
+		</div>
+	</div>
+</div> 
+<div class="x_panel mt-5">
+	<div class="x_title">
+		<h2 id="workT" class="d-inline-block bold pointer">내 일감</h2><h2>&nbsp;|&nbsp;</h2>
+		<h2 id="bkmkT" class="d-inline-block light pointer">즐겨찾기 일감</h2>
+		<div class="clearfix"></div> 
+	</div>  
+	<div class="x_content mt-3" style="display: block;">
+		<div> 
+			<div id="myWorkDiv">
+				<div id="searchUI" class="mb-3">
+						<select id="selectWSC" name="workSttusCode">	
+							<option value>상태</option>
+							<option value="1">신규</option> 
+							<option value="2">진행</option>
+							<option value="3">완료</option>
+						</select>
+						<button id="colSetBtn" type="button" class="btn gobackBtn ml-3" >🔧</button>
+				</div> 
+				<div id="colSet" class="mb-3">
+					<div id="colDiv" class="d-flex">
+						<div class="float-left mr-3">  
+						가능 컬럼          
+							 <ul id="hideCol" class="d-flex flex-column">
+							  	<li data-val ="priortNm">우선순위</li>
+							  	<li data-val ="memNm">담당자</li> 
+							 	<li data-val ="workBgnde">시작일</li>  
+							 	<li data-val ="workEndde">종료일</li>
+							 	<li data-val ="workRgsde">등록일</li>
+							 	<li data-val ="workUpdtde">변경일</li>
+							 	<li data-val ="workOthbcAt">공개여부</li> 
+							 	<li data-val ="upperSj" >상위일감</li> 
+							 </ul>  
+						</div>   
+						<div class="float-right">
+						선택 컬럼
+							 <ul id="showCol">  
+							 	<li data-val ="prjctNm" class="grey" onclick="event.cancelBubble=true;">프로젝트명</li>
+	 						 	<li data-val ="workSj" class="grey" onclick="event.cancelBubble=true;">제목</li>
+							 	<li data-val ="ctgryNm" class="grey" onclick="event.cancelBubble=true;">유형</li>
+							 	<li data-val ="sttusNm" class="grey" onclick="event.cancelBubble=true;">상태</li> 
+							 	<li data-val ="workPrgsDgreePoint" class="grey" onclick="event.cancelBubble=true;">진척도</li> 
+							 </ul>  
+						</div> 
+					</div> 
+					<div> 
+						<button id="saveColBtn" type="button" class="btn btbtn float-right">저장</button>
+					</div>
+				</div>
+				<table id="myWorkList" class="table">  
+					<thead> 
+						<tr class="ths">
+						
+						</tr>
+					</thead>
+					<tbody>
+	
+					</tbody>
+					<tfoot>
+						<tr id="footTr"> 
+							<td colspan="5" >
+								<!-- paging UI -->
+								<div class="pagingArea"></div>
+							</td> 
+						</tr>
+					</tfoot>
+				</table>
+				<form  id="searchForm" >
+					<input type="hidden" name="page">
+					<input type="hidden" name="workSttusCode"> 
+				</form>
+			</div>
+			<div id="workBkmkDiv">
+				<table id="workBkmkList" class="table">  
+					<thead> 
+						<tr>
+							<th>프로젝트명</th>
+							<th>제목</th>
+							<th>유형</th>
+							<th>상태</th>
+							<th>담당자</th>
+						</tr>
+					</thead>
+					<tbody>
+	
+					</tbody>
+					<tfoot>
+						<tr > 
+							<td colspan="6" >
+								<!-- paging UI -->
+								<div class="pagingArea"></div>
+							</td> 
+						</tr>
+					</tfoot>  
+				</table>
+			<form  id="pagingForm" > 
+				<input type="hidden" name="page">
+			</form>
+			</div>
+		</div>
+	</div>
+</div>
+
+
+<script type="text/javascript" src="${cPath}/resources/js/myPaging.js"></script>
+<script type="text/javascript">
+//local storage 사용
+window.localStorage; 
+$(function(){  
+		//즐겨찾기 일감 테이블 안보임
+		$("#workBkmkDiv").hide();
+	  	// 테이블 변환
+		$("#bkmkT").on("click", function(){ 
+		  	$(this).addClass("bold").removeClass("light");
+		  	$("#workT").addClass("light").removeClass("bold");
+		  	$("#workBkmkDiv").show();
+		  	$("#myWorkDiv").hide();
+		});
+		$("#workT").on("click", function(){
+			$(this).addClass("bold").removeClass("light");
+			$("#bkmkT").addClass("light").removeClass("bold"); 
+		  	$("#myWorkDiv").show();
+		  	$("#workBkmkDiv").hide(); 
+		});
+	  	
+		
+		//내일감 더보기 클릭시 해당 프로젝트 팝업 일감상세 열림	
+		$("#myWorkList").on("click", ".goWork", function(){ 
+			var pCode = $(this).prev().data("pcode");
+			workCode = $(this).data("work");  
+			var prjctNm = $(this).prev().html(); 
+			var popupWidth = 1400;              
+			var popupHeight = 950;                  
+			var popupX = (window.screen.width / 2) - (popupWidth / 2); 
+			// 만들 팝업창 width 크기의 1/2 만큼 보정값으로 빼주었음    
+			var popupY= (window.screen.height / 2) - (popupHeight / 2) - 50;  
+			// 만들 팝업창 height 크기의 1/2 만큼 보정값으로 빼주었음       
+			var popup = window.open("${cPath}/project/"+pCode + "/workDetail/" + workCode, prjctNm + " 프로젝트", 'toolbar=yes,scrollbars=yes, height=' + popupHeight  + ', width=' + popupWidth  + ', left='+ popupX + ', top='+ popupY );
+			});  
+		
+		//즐겨찾기일감 더보기 클릭시 해당 프로젝트 팝업 일감상세 열림	
+		$("#workBkmkList").on("click", ".goWork", function(){ 
+			var pCode = $(this).prev().data("pcode");
+			workCode = $(this).data("work");  
+			var prjctNm = $(this).prev().html(); 
+			var popupWidth = 1400;              
+			var popupHeight = 950;                  
+			var popupX = (window.screen.width / 2) - (popupWidth / 2); 
+			// 만들 팝업창 width 크기의 1/2 만큼 보정값으로 빼주었음    
+			var popupY= (window.screen.height / 2) - (popupHeight / 2) - 50;  
+			// 만들 팝업창 height 크기의 1/2 만큼 보정값으로 빼주었음       
+			var popup = window.open("${cPath}/project/"+pCode + "/workDetail/" + workCode, prjctNm + " 프로젝트", 'toolbar=yes,scrollbars=yes, height=' + popupHeight  + ', width=' + popupWidth  + ', left='+ popupX + ', top='+ popupY );
+			});  
+		 
+		//local storgae에 세팅한 값 꺼내오기
+		console.log(getCols());  
+		var DATA = getCols();	   
+// 		removeCols();       
+// 		removeColNames();   
+		var DATANAME = getColNames();  
+		var fixedCol =  $('#showCol li[class="grey"]');
+		var hideCol = $('#hideCol li'); 
+		let lis = []; 
+		if(DATA != null && DATANAME != null){ 
+			if(DATA.length > fixedCol.length){
+				DATA.forEach(function (col, index)  {   
+// 				<li data-val ="rnum">번호</li>      
+					if($(fixedCol[index]).data('val')==col) return false;
+					$("#showCol").append($("<li>").data('val', col).text(DATANAME[index]));
+				});   
+				$.each(hideCol, function(i,col){    
+					let showCols = $('#showCol li');  
+					$.each(showCols, function(i,showCol){    
+						if($(showCol).data('val')==$(col).data('val')){
+							$(col).remove();        
+						}   
+					});
+				});	
+			}   
+			DATANAME.forEach(name => {      
+				$("#myWorkList .ths").append($("<th>").html(name));
+			});    
+		}else{   
+			$.each(fixedCol, function(i,col){   
+				$("#myWorkList .ths").append($("<th>").html($(col).text())); 
+			});
+		} 
+		$('#footTr td').attr('colspan', $('#myWorkList thead th').length);
+		
+		
+		//내 일감 리스트 불러오기
+		var tbody = $("#myWorkList tbody");  
+		var pagingArea = $("#myWorkList tfoot .pagingArea");  
+		$("#searchForm").paging().ajaxForm({
+			url : "${cPath }/mypage/myWork",
+				dataType : 'json',
+			success : function(pagingVO){
+				let showColLen = $("#showCol li").length; 
+				tbody.empty(); 
+				pagingArea.empty();
+				let myWorkList = pagingVO.dataList;
+				let trTags = [];
+				if (myWorkList && myWorkList.length > 0) {
+					$(myWorkList).each(function(i, work) {
+						trTags.push(makeTdTds(work)); 
+						
+					}); 
+
+					pagingArea.html(pagingVO.pagingHTMLBS);
+				} else {
+					trTags.push($("<tr>").html(
+							$("<td class='text-center'>").attr("colspan", showColLen).html(
+									"해당되는 일감이 없습니다.")));
+				}
+				tbody.append(trTags);
+				
+				//프로젝트명,일감제목길이 말줄임표
+				let len = 20;
+				let ellipsis = $(".ellipsis");
+				$.each(ellipsis, function(i, ell){  
+					$(ell).attr("data-tooltip-text", $(ell).html());
+					if($(ell).html().length > len){     
+						$(ell).html($(ell).html().substring(0, len) + "...");
+					}   
+				}); 
+			} 
+		}).submit(); 
+		
+		
+		 //즐겨찾기 일감 리스트 불러오기
+		var tbody2 = $("#workBkmkList tbody");  
+		var pagingArea2 = $("#workBkmkList tfoot .pagingArea");  
+		$("#pagingForm").paging().ajaxForm({
+			url : "${cPath }/mypage/workBkmk",
+				dataType : 'json', 
+			success : function(pagingVO){
+				$("#checkall").prop("checked", false);
+				tbody2.empty(); 
+				pagingArea2.empty();
+				let workBkmkList = pagingVO.dataList;
+				let trTags = [];
+				if (workBkmkList && workBkmkList.length > 0) {
+					$(workBkmkList).each(function(i, workBkmk) {
+						trTags.push(makeBkmkTrTag(workBkmk)); 
+						 
+					}); 
+
+					pagingArea2.html(pagingVO.pagingHTMLBS);
+				} else {
+					trTags.push($("<tr>").html(
+							$("<td class='text-center'>").attr("colspan", 5).html(
+									"해당되는 일감이 없습니다.")));
+				}
+				tbody2.append(trTags); 
+				
+				
+				//프로젝트명,일감제목길이 말줄임표
+				let len = 20; 
+				let ellipsis = $(".ellipsis");  
+				$.each(ellipsis, function(i, ell){
+					$(ell).attr("data-tooltip-text", $(ell).html());
+					if($(ell).html().length > len){     
+						$(ell).html($(ell).html().substring(0, len) + "...");
+					}  
+				}); 
+			} 
+		}).submit();  
+		
+		//즐겨찾기 일감 리스트 trTag
+		function makeBkmkTrTag(workBkmk){ 
+			let memNm = workBkmk.memLnm + workBkmk.memFnm;
+			return $("<tr class='tds'>").append(   
+				$("<td class='ellipsis goPrjct' data-pcode='"+workBkmk.prjctNo+"'>").html(workBkmk.prjctNm),		
+				$("<td class='ellipsis goWork' data-work='"+workBkmk.workCode+"'>").html(workBkmk.workSj),		
+				$("<td class='text-center'>").html(workBkmk.ctgryNm),		 
+				$("<td class='text-center'>").html(workBkmk.sttusNm),		
+				$("<td class='text-center'>").html(memNm)
+			).data('workBkmk',workBkmk); 
+		}
+		
+		//즐겨찾기 선택 , 삭제
+		$("#delBkmk").hide();
+		$("#workBkmkList").on('click', 'input:checkbox', function(){
+			if($("#workBkmkList input:checkbox:checked").length > 0){  
+				$("#delBkmk").show();
+			}else{  
+				$("#delBkmk").hide();
+			} 
+			
+			let checkBoxSize = $("#workBkmkList input:checkbox").length;
+			let checkedSize =$("#workBkmkList input:checkbox:checked").length;
+			if(checkBoxSize > checkedSize){
+				$("#checkall").prop("checked", false);
+			}else{  
+				$("#checkall").prop("checked", true);
+			} 
+		}); 
+
+		$("#checkall").click(function(){
+			if($(this).is(":checked")){  
+				$("#delBkmk").show();
+				$("#workBkmkList input:checkbox").prop("checked", true);
+			}else{ 
+				$("#delBkmk").hide();
+				$("#workBkmkList input:checkbox").prop("checked", false);
+			}
+		});
+		
+		$("#delBkmk").click(function(){
+			let resp = confirm('즐겨찾기 일감을 해제하시겠습니까');
+			if(!resp)return false;
+			$('#delBkmkForm').submit();
+		});
+		
+		
+		
+		//내 일감 리스트 trTag
+		function makeTdTds(work){
+			let showCol = $("#showCol li");  
+			let tds = [];
+			DATA = getCols();	
+			if(DATA != null){
+				DATA.forEach(col => {   
+					if(col=='memNm'){
+						work[col] =  work['memLnm'] + work['memFnm'];
+					}
+					if(work[col] != null){
+						if(col=='prjctNm' ){ 
+							tds.push($('<td class="ellipsis goPrjct" data-pcode="'+work['prjctNo']+'">').html(work[col])); 
+						}else if( col=='workSj'){ 
+							tds.push($('<td class="ellipsis goWork" data-work="'+work['workCode']+'">').html(work[col])); 
+						}else{ 
+							if(col=='workBgnde' || col=='workEndde' || col=='workRgsde' || col=='workUpdtde'){
+								tds.push($('<td class="text-center">').html(work[col]));
+							}else{ 
+								if(col=='workOthbcAt'){    
+									if(work[col]=='1'){   
+										tds.push($('<td class="text-center">').html('공개')); 
+									}else if(work[col]=='0'){  
+										tds.push($('<td class="text-center">').html('비공개'));
+									} 
+								}else{
+									tds.push($('<td class="text-center">').html(work[col]));
+								}
+							}
+						}   
+					}else{  
+						tds.push($('<td class="text-center">').html('-')); 
+					} 
+				});   
+			}else{ 
+				$.each(showCol, function(i,col){  
+					let val =$(col).data('val'); 
+					if(val=='memNm'){
+						work[val] =  work['memLnm'] + work['memFnm'];
+					} 
+					if(work[val] != null){
+						if(val=='prjctNm' ){ 
+							tds.push($('<td class="ellipsis goPrjct" data-pcode="'+work['prjctNo']+'">').html(work[val])); 
+						}else if( val=='workSj'){ 
+							tds.push($('<td class="ellipsis goWork" data-work="'+work['workCode']+'">').html(work[val])); 
+						}else{      
+							if(val=='workBgnde' || val=='workEndde' || val=='workRgsde' || val=='workUpdtde'){
+								tds.push($('<td class="text-center">').html(work[val]));
+							}else{   
+								if(val=='workOthbcAt'){ 
+									if(work[val]=='1'){    
+										tds.push($('<td class="text-center">').html('공개')); 
+									}else if(work[val]=='0'){  
+										tds.push($('<td class="text-center">').html('비공개'));
+									} 
+								}else{
+									tds.push($('<td class="text-center">').html(work[val]));
+								}
+							}
+						}   
+					}else{
+						tds.push($('<td class="text-center">').html('-')); 
+					}
+				}); 
+			}
+			return $("<tr class='tds'>").append(tds).data('work',work);
+		}
+		 
+		
+		//컬럼설정 
+		$("#colSet").hide();
+		$("#colSetBtn").on('click', function(){
+			if($('#colSet').is(':hidden')){
+				$('#colSet').show(); 
+			}else{  
+				$('#colSet').hide();   
+			}
+		}); 
+		
+		$("#hideCol").on('dblclick','li',function(){
+			let hc = $(this);
+			$(hc).remove(); 
+			$("#showCol").append(hc);
+		}); 
+		$("#showCol").on('dblclick','li',function(){
+			if($(this).hasClass('grey')) return false;
+			let sc = $(this);
+			$(sc).remove();   
+			$("#hideCol").append(sc);  
+		}); 
+		
+		$("#saveColBtn").on("click", function(){
+			let thtr = $("#myWorkList .ths");
+			thtr.empty(); 
+			let tdtr = $("#myWorkList .tds");
+			let works =[];
+			$.each(tdtr,function(i, tr){
+				works.push($(tr).data('work')); 
+			});
+			tbody.empty();
+			let showCol = $("#showCol li"); 
+			$('#footTr td').attr('colspan', showCol.length);
+			ths = []; 
+			let colNamesArray = [];
+			let colsArray = []; 
+			$.each(showCol, function(i,col){  
+				ths.push($('<th>').html($(col).text())); 
+				colNamesArray.push($(col).text());    
+				colsArray.push($(col).data('val'));  
+			});    
+			  
+// 			fixColsLen = $('#showCol li[class="grey"]').length;
+			if(showCol.length > fixedCol.length){  
+				saveColNames(colNamesArray);
+				saveCols(colsArray); 
+			}else{
+				removeCols();    
+				removeColNames(); 
+			}  
+			
+			if(works.length > 0){ 
+				$.each(works, function(i,work){ 
+					tds = [];   
+					$.each(showCol, function(i,col){ 
+						let val =$(col).data('val'); 
+						if(val=='memNm'){  
+							work[val] = work['memLnm'] + work['memFnm'];
+						}  
+						if(work[val] != null){ 
+							if(val=='prjctNm' ){ 
+								tds.push($('<td class="ellipsis goPrjct" data-pcode="'+work['prjctNo']+'">').html(work[val])); 
+							}else if( val=='workSj'){ 
+								tds.push($('<td class="ellipsis goWork" data-work="'+work['workCode']+'">').html(work[val])); 
+							}else{   
+								if(val=='workBgnde' || val=='workEndde' || val=='workRgsde' || val=='workUpdtde'){
+									tds.push($('<td class="text-center">').html(work[val]));
+								}else{ 
+									if(val=='workOthbcAt'){ 
+										if(work[val]=='1'){   
+											tds.push($('<td class="text-center">').html('공개')); 
+										}else if(work[val]=='0'){  
+											tds.push($('<td class="text-center">').html('비공개'));
+										}
+									}else{
+										tds.push($('<td class="text-center">').html(work[val]));
+									}
+								} 
+							}
+						}else{   
+							tds.push($('<td class="text-center">').html('-'));
+						}   
+					});  
+					tbody.append($("<tr class='tds'>").append(tds).data('work',work));  
+				});  
+			}else{
+				tbody.append($("<tr>").append($("<td class='text-center'>").attr("colspan", showCol.length).html(
+				"해당되는 일감이 없습니다.")));  
+			}
+			thtr.append(ths);  
+			
+			$("#colSet").hide(); 
+		});  
+});
+
+function removeColNames(){ 
+	localStorage.removeItem('${authMember.memId}colNames');	
+}
+function removeCols(){ 
+	localStorage.removeItem('${authMember.memId}cols');	
+}
+ 
+function saveColNames(colNamesArray) {
+	localStorage.setItem('${authMember.memId}colNames', JSON.stringify(colNamesArray));  
+}
+function saveCols(colsArray) {
+	localStorage.setItem('${authMember.memId}cols', JSON.stringify(colsArray)); 
+} 
+
+function getCols(){ 
+	  if(localStorage.getItem("${authMember.memId}cols")!==null){
+	      return JSON.parse(localStorage.getItem("${authMember.memId}cols"));
+	    }else{
+	    	return null; 
+	    }  
+}
+function getColNames(){ 
+	  if(localStorage.getItem("${authMember.memId}colNames")!==null){ 
+	      return JSON.parse(localStorage.getItem("${authMember.memId}colNames"));
+	    }else{
+	    	return null; 
+	    } 
+}
+
+
+
+//프로젝트명 클릭시 프로젝트 팝업 열림
+$("body").on("click",".goPrjct", function(){ 
+	let pCode = $(this).data("pcode");
+	let prjctNm = $(this).html(); 
+	var popupWidth = 1400;             
+	var popupHeight = 950;                  
+	var popupX = (window.screen.width / 2) - (popupWidth / 2); 
+	// 만들 팝업창 width 크기의 1/2 만큼 보정값으로 빼주었음    
+	var popupY= (window.screen.height / 2) - (popupHeight / 2) - 50;  
+	// 만들 팝업창 height 크기의 1/2 만큼 보정값으로 빼주었음       
+	var popup = window.open("${cPath}/project/"+pCode + "/main", prjctNm + " 프로젝트", 'toolbar=yes,scrollbars=yes, height=' + popupHeight  + ', width=' + popupWidth  + ', left='+ popupX + ', top='+ popupY );
+	});  
+	
+
+</script>

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.activity.dao.GraphDAO">
+	<select id="selectProject" parameterType="int" resultType="kr.or.ddit.main.vo.MyProjectVO">
+		SELECT 
+			P.PRJCT_NO, PRJCT_NM, SUMRY, 
+			(SELECT COUNT(*) FROM PROJECT_MEM WHERE PRJCT_NO = P.PRJCT_NO AND AUTHOR != 'ROLE_OB') MEM_NUMBER,
+			TO_CHAR(PRJCT_BEGINDE, 'YYYY-MM-DD') PRJCT_BEGINDE,  
+			TO_CHAR(PRJCT_ENDDE, 'YYYY-MM-DD') PRJCT_ENDDE, 
+			UPPER_PRJCT_NO, 
+			(SELECT T.PRJCT_NM FROM 
+			PROJECT T WHERE T.PRJCT_NO = P.UPPER_PRJCT_NO) "upperPrjctNm",
+			TO_CHAR(PRJCT_RGSDE, 'YYYY-MM-DD') PRJCT_RGSDE, 
+			PRJCT_ORNT, BSNSSCLAE
+			FROM PROJECT P  
+		WHERE P.PRJCT_NO = #{prjctNo}
+		AND DELET_STATE = '0'
+	</select>
+	<select id="selectWorkPrgsCounts" parameterType="int" resultType="kr.or.ddit.mypage.vo.MyWorkVO">
+		SELECT COUNT(*) TOTAL_WORK,
+		       TRUNC(AVG(WORK_PRGS_DGREE_POINT), 1) AVG_PRGS,
+		         AVG((SELECT COUNT(*) FROM WORK WHERE WORK_STTUS_CODE = 'W00103' 
+		         	 	AND PRJCT_NO = 1 AND WORK_OTHBC_AT = '1')) DONECOUNT
+		FROM WORK  
+		WHERE PRJCT_NO = #{prjctNo}
+		AND WORK_OTHBC_AT = '1'
+	</select> 
+	
+	<select id="selectDayInsertWork" parameterType="int" resultType="kr.or.ddit.mypage.vo.MyWorkVO" >
+		<![CDATA[
+		SELECT A.DAY, 
+    		(SELECT COUNT(*) FROM WORK W WHERE PRJCT_NO = #{prjctNo}
+    	 		AND WORK_OTHBC_AT = '1' AND TO_CHAR(WORK_RGSDE, 'YYYY-MM-DD') = A.DAY) AS DAYWORKCNT,
+    	 	  (SELECT  TRUNC(AVG(WORK_PRGS_DGREE_POINT), 1) FROM WORK W WHERE PRJCT_NO = #{prjctNo} 
+    	 	   	AND WORK_OTHBC_AT = '1' AND TO_CHAR(WORK_RGSDE, 'YYYY-MM-DD') <= A.DAY) AS AVG_PRGS
+		FROM( 
+		    SELECT TO_CHAR((SYSDATE  - LEVEL + 1),'YYYY-MM-DD')  AS DAY
+		    FROM DUAL 
+		    CONNECT BY LEVEL <= SYSDATE - (SELECT PRJCT_BEGINDE FROM PROJECT WHERE PRJCT_NO = #{prjctNo})
+  		)A 
+  		ORDER BY A.DAY 
+  		]]>
+	</select>
+	 
+	<select id="selectMemSttsWork" parameterType="int" resultType="kr.or.ddit.mypage.vo.MyWorkVO">
+		SELECT DISTINCT PM.MEM_ID, W.WORK_STTUS_CODE, (select count(*) from work wo where wo.prjct_no = #{prjctNo} and wo.WORK_STTUS_CODE =  W.WORK_STTUS_CODE AND WO.MEM_ID = PM.MEM_ID) TOTAL_WORK,  
+    			(SELECT  MAKENAMEFORMAT(MEM_FNM,MEM_LNM, PM.MEM_ID) FROM MEM M WHERE M.MEM_ID = PM.MEM_ID) MEM_NAME 
+		FROM WORK W INNER JOIN  PROJECT_MEM PM ON(W.PRJCT_NO=PM.PRJCT_NO)
+		WHERE W.PRJCT_NO = #{prjctNo}
+		AND AUTHOR != 'ROLE_OB' 
+		ORDER BY MEM_ID
+	</select>
+	 
+	 <select id="selectIssueCount" parameterType="int" resultType="kr.or.ddit.main.vo.MyIssueVO">
+	 	SELECT COUNT(*) TOTAL_ISSUE,
+    		  AVG((SELECT COUNT(*) FROM ISSUE WHERE PRJCT_NO = #{prjctNo} AND ISSUE_SOLUT_AT = '1' )) SOLUT_ISSUE
+		FROM ISSUE 
+		WHERE PRJCT_NO = #{prjctNo}
+	 </select>
+	 
+<!-- 	 		    AVG( NVL(TRUNC((SELECT COUNT(*) FROM ISSUE WHERE PRJCT_NO = #{prjctNo} AND ISSUE_OTHBC_AT = '1')  -->
+<!-- 		    /  DECODE((SELECT COUNT(*) FROM WORK WHERE PRJCT_NO = #{prjctNo} AND WORK_OTHBC_AT = '1') -->
+<!-- 		        , 0, null,(SELECT COUNT(*) FROM WORK WHERE PRJCT_NO = #{prjctNo})) * 100, 1),0)) IS_TOTAL_OCC, -->
+	 <select id="selectIssueAvgCounts" parameterType="int" resultType="kr.or.ddit.main.vo.MyIssueVO">
+	 <![CDATA[
+	 	SELECT A.DAY,
+         	(SELECT COUNT(*) FROM ISSUE W WHERE PRJCT_NO = #{prjctNo} 
+    	 		AND TO_CHAR(ISSUE_RGSDE, 'YYYY-MM-DD') = A.DAY) AS DAYISSUECNT, 
+		    NVL(TRUNC((SELECT COUNT(*) FROM ISSUE WHERE PRJCT_NO = #{prjctNo}  AND TO_CHAR(ISSUE_RGSDE, 'YYYY-MM-DD') <= A.DAY) 
+		    /  DECODE((SELECT COUNT(*) FROM WORK WHERE PRJCT_NO = #{prjctNo} AND TO_CHAR(WORK_RGSDE, 'YYYY-MM-DD') <= A.DAY)
+		        , 0, null,(SELECT COUNT(*) FROM WORK WHERE PRJCT_NO = #{prjctNo} AND TO_CHAR(WORK_RGSDE, 'YYYY-MM-DD') <= A.DAY)) * 100, 1),0) IS_OCC_RATE ,
+		    NVL(TRUNC((SELECT COUNT(*) FROM ISSUE WHERE PRJCT_NO = #{prjctNo} AND ISSUE_SOLUT_AT = '1' AND TO_CHAR(ISSUE_RGSDE, 'YYYY-MM-DD') <= A.DAY) 
+		    / DECODE((SELECT COUNT(*) FROM ISSUE WHERE PRJCT_NO = #{prjctNo}  AND TO_CHAR(ISSUE_RGSDE, 'YYYY-MM-DD') <= A.DAY )
+		        , 0, NULL,(SELECT COUNT(*) FROM ISSUE WHERE PRJCT_NO = #{prjctNo} AND TO_CHAR(ISSUE_RGSDE, 'YYYY-MM-DD') <= A.DAY )) * 100, 1), 0)IS_SOLUT_RATE 
+		FROM( 
+		    SELECT TO_CHAR((SYSDATE  - LEVEL + 1),'YYYY-MM-DD')  AS DAY
+		    FROM DUAL 
+		    CONNECT BY LEVEL <= SYSDATE - (SELECT PRJCT_BEGINDE FROM PROJECT WHERE PRJCT_NO = #{prjctNo})
+		    )A  
+		GROUP BY A.DAY
+		ORDER BY A.DAY
+		]]>
+	 </select>
+</mapper>

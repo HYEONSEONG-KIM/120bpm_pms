@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.member.dao.">
+	<sql id="searchFrag">
+		<where>
+			<if test="simpleSearch!=null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.searchWord)">
+				<choose>
+					<when test ="simpleSearch.searchType eq 'id'">
+						INSTR(MEM_ID, #{simpleSearch.searchWord}) > 0 
+					</when>
+					<when test = "simpleSearch.searchType eq 'nm'">
+					    INSTR(MEM_NM, #{simpleSearch.searchWord}) > 0
+					</when>
+					<when  test = "simpleSearch.searchType eq 'hp'">
+					    INSTR(MEM_HP, #{simpleSearch.searchWord}) > 0
+					</when>
+					<when  test = "simpleSearch.searchType eq 'email'">
+					    INSTR(MEM_EMAIL, #{simpleSearch.searchWord}) > 0
+					</when>
+					<when  test = "simpleSearch.searchType eq 'addr1'">
+					    INSTR(MEM_ADDR1, #{simpleSearch.searchWord}) > 0
+					</when>
+					<when  test = "simpleSearch.searchType eq 'memjoinde'">
+					    INSTR(MEM_JOIN_DE, #{simpleSearch.searchWord}) > 0
+					</when>										
+				<otherwise>
+				INSTR(MEM_ID, #{simpleSearch.searchWord}) > 0 
+				OR INSTR(MEM_NM, #{simpleSearch.searchWord}) > 0
+				OR INSTR(MEM_HP, #{simpleSearch.searchWord}) > 0
+				OR INSTR(MEM_EMAIL, #{simpleSearch.searchWord}) > 0
+				OR INSTR(MEM_ADDR1, #{simpleSearch.searchWord}) > 0
+				OR INSTR(MEM_JOIN_DE, #{simpleSearch.searchWord}) > 0
+				</otherwise>
+				</choose>
+			</if>
+		</where>
+	</sql>
+	
+	
+	<select id="selectTotalRecord" parameterType="kr.or.ddit.member.vo.PagingVO" resultType="int">
+			SELECT COUNT(*)
+			FROM MEM
+			<include refid="searchFrag"></include>
+	</select>
+	
+	<select id="selectMemberList" resultType="kr.or.ddit.member.vo.MemberVO" parameterType="kr.or.ddit.member.vo.PagingVO">
+		SELECT B.*
+		FROM (
+			SELECT A.*, ROWNUM RNUM
+			FROM  (
+				select MEM_ID,  MEM_NM,  MEM_HP, MEM_EMAIL, MEM_ADDR1,MEM_JOIN_DE, MEM_LAST_LOGIN_DE from MEM
+
+				ORDER BY ROWID DESC
+			)   A 
+		)  B 
+		<![CDATA[
+			WHERE RNUM >= #{startRow} AND RNUM <= #{endRow}   
+		]]>              
+	</select>
+	
+
+	
+</mapper>

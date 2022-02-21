@@ -1,0 +1,646 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>일반회원 가입</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1 " >
+<link rel="stylesheet" 
+   href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+<script
+   src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script
+   src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+<script src="../js/jquery.serializejson.min.js"></script>
+<script src="../js/memberreg.js"></script>
+<script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+  <link rel="stylesheet" href="../css/page.css"> 
+<script>
+function sample6_execDaumPostcode() {
+    new daum.Postcode({
+        oncomplete: function(data) {
+            // 팝업에서 검색결과 항목을 클릭했을때 실행할 코드를 작성하는 부분.
+
+            // 각 주소의 노출 규칙에 따라 주소를 조합한다.
+            // 내려오는 변수가 값이 없는 경우엔 공백('')값을 가지므로, 이를 참고하여 분기 한다.
+            var addr = ''; // 주소 변수
+             var extraAddr = ''; // 참고항목 변수 
+
+            //사용자가 선택한 주소 타입에 따라 해당 주소 값을 가져온다.
+            if (data.userSelectedType === 'R') { // 사용자가 도로명 주소를 선택했을 경우
+                addr = data.roadAddress;
+            } else { // 사용자가 지번 주소를 선택했을 경우(J)
+                addr = data.jibunAddress;
+            }
+
+            // 사용자가 선택한 주소가 도로명 타입일때 참고항목을 조합한다.
+            if(data.userSelectedType === 'R'){
+                // 법정동명이 있을 경우 추가한다. (법정리는 제외)
+                // 법정동의 경우 마지막 문자가 "동/로/가"로 끝난다.
+                if(data.bname !== '' && /[동|로|가]$/g.test(data.bname)){
+                    extraAddr += data.bname;
+                }
+                // 건물명이 있고, 공동주택일 경우 추가한다.
+                if(data.buildingName !== '' && data.apartment === 'Y'){
+                    extraAddr += (extraAddr !== '' ? ', ' + data.buildingName : data.buildingName);
+                }
+/*                 // 표시할 참고항목이 있을 경우, 괄호까지 추가한 최종 문자열을 만든다.
+                if(extraAddr !== ''){
+                    extraAddr = ' (' + extraAddr + ')';
+                } */
+/*                 // 조합된 참고항목을 해당 필드에 넣는다.
+                document.getElementById("sample6_extraAddress").value = extraAddr;
+            
+            } else {
+                document.getElementById("sample6_extraAddress").value = '';
+            } */
+        }
+            // 우편번호와 주소 정보를 해당 필드에 넣는다.
+            document.getElementById('sample6_postcode').value = data.zonecode;
+            document.getElementById("sample6_address").value = addr;
+            // 커서를 상세주소 필드로 이동한다.
+            document.getElementById("sample6_detailAddress").focus();
+        }
+    }).open();
+
+  } 
+</script>
+
+<% String memId = (String)session.getAttribute("loginMem"); %> 
+<% String adminId = (String)session.getAttribute("admin"); %> 
+<% String shelterId = (String)session.getAttribute("shelterId");%>
+
+<script>
+  var authNum = null; 
+  var mem_Id = null;  
+ $(function(){
+ 
+
+      memId = '<%=memId%>'; 
+      adminId = '<%=adminId%>';
+      shelterId = '<%=shelterId%>';
+        
+ 
+      
+      if(adminId != "null"){
+         $('#mp').text('관리자 페이지');
+         }else if(shelterId != "null"){
+            $('#mp').text('보호소 페이지');
+         }else if(memId!="null"){  
+            $('#mp').text('마이페이지');
+         }else{ 
+            $('#mp').text('로그인/회원가입');
+            $('#lo').hide(); 
+         } 
+      
+      
+      $('#mypg').click(function() { 
+         
+         if(adminId != "null"){
+            window.location.href = '../admin/admin.jsp';
+            }else if(shelterId != "null"){
+               window.location.href = '../addAd/shelterAdList.jsp';
+            }else if(memId!="null"){  
+               window.location.href = '../mypage/mypageShow.jsp';
+            }else{ 
+               window.location.href = '../memberLogin/memberLoginShow.jsp';
+            } 
+      });
+
+      $('#gohome').click(function() {
+         window.location.href="../메인페이지/index.jsp";
+      });
+      
+      $("#logout").click(function(){
+         window.location.href = '../mypage/logout.jsp'; 
+      });
+
+ 
+      
+      $('#idck').on('click', function(){
+   
+         //외부 함수 호출 - true / false
+         if(!idcheck()){
+            $('#id').css('border-color','red');
+            vs = $('#id').parents(".form-group");
+            vs.find('img').remove();
+            vs.find('span').remove();
+            vs.append("<span> 아이디 재입력</span>");
+            $('span').css('color', 'red'); 
+            $('#id').css('border-color', 'red');
+            return false;
+
+         }else{ 
+            $.ajax({ 
+               url: '/MProject/Controller.do', 
+               data: {'id' : mem_Id},
+               type: 'get',
+               dataType: 'json',
+               success: function(res){ 
+                  if(res.sw == "1"){ 
+                     alert("중복아이디 사용불가");
+                     $('#id').css('border-color','red');
+                     vs = $('#id').parents(".form-group");
+                     vs.find('img').remove();
+                     vs.find('span').remove();
+                     vs.append("<span> 아이디 재입력</span>");
+                     $('span').css('color', 'red');
+                     $('#id').css('border-color', 'red');
+                  }else{
+                     alert(mem_Id +"는 사용 가능합니다.");
+                     $('#id').css('border-color','yellowgreen');
+                     vs = $('#idck').parents('.form-group');
+                     vs.find('span').remove();
+                     vs.find('img').remove();
+                     $('<img>',{
+                        'src' : '../images/check.png',
+                        'width' : '20px',
+                        'height' : '20px'
+                     }).appendTo(vs);
+                  }
+               },
+               error: function(xhr){
+                  alert("상태 : " + xhr.status);
+               }
+            })
+         }
+      });
+      
+      
+      $('#id').on('change', function(){
+         $(this).css('border-color','lightgrey');
+      })
+      
+      //비밀번호
+   $('#pwd').on('keyup', function(){ 
+         passvalue = $(this).val().trim(); 
+         
+         //길이체크
+         if(passvalue.length < 8 || passvalue.length > 12){
+            nopro(this, "8~12사이 입니다"); 
+            return false;
+         } 
+         //정규식 - 영문대소문자, 특수문자, 숫자가 반드시 한개 이상 
+         //전방탐색 : 찾을문자?=기준문자   h?=: //:(콜론)이 기준 
+         
+          regpass = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*()]).{8,12}$/; //비밀번호 정규화
+               
+         if(regpass.test(passvalue)){
+            okpro(this);
+         }else{
+            nopro(this, "형식오류 입니다");
+         } ;
+      })   
+      
+      
+      // checkpass
+      $('#checkpass').on('keyup', function(){
+         // 입력값 가져오기
+         chkpassvalue = $(this).val().trim();
+         
+         //비밀번호 같은지 비교
+         passvalue = $('#pwd').val().trim();
+         if(chkpassvalue==passvalue){
+            okpro($('#checkpass'));
+         }else{
+            nopro($('#checkpass'), "비밀번호가 일치하지 않습니다.");
+         }
+      })
+      
+      //이름 체크
+   $('#name').on('keyup',function(){ 
+      
+         //name입력값 가져오기
+         namevalue = $("#name").val().trim();
+         
+         //길이체크 2~5
+         if(namevalue.length < 2 || namevalue.length > 5){
+            nopro(this, "2~5사이 입니다");
+            return false;
+         }
+         
+         //정규식 - 한글
+         regname = /^[가-힣]{2,5}$/; //이름 정규화
+         
+         if(regname.test(namevalue)){
+            okpro(this);   
+         }else{
+               nopro(this, "올바른 형식이 아닙니다")
+         }
+      })
+      
+      //성별
+      $('#gender').on('change', function(){      
+         gendvalue = $('#gender').val().trim();
+         if(gendvalue!="선택"){
+            okpro(this);
+         }else{
+            vs = $(this).parents(".form-group");
+            vs.find('img').remove();
+            vs.find('span').remove();
+            vs.append("<span> 성별을 선택하세요</span>");
+            $('span').css('color', 'red');
+            $(this).css('border-color', 'red');
+         }
+         
+      })
+      
+      
+      //이메일 체크
+      $('#email1').on('keyup',function(){ 
+         emailvalue = $(this).val().trim();
+         
+/*          if(emailvalue.length <5){
+            nopro(this, "5글자 이상 입력해주세요");
+            return false;
+         } */
+         
+/*        regmail = /^[0-9a-zA-z]+@[0-9a-zA-Z]+(\.[a-z]+){1,2}$/ //이메일 정규화 */
+         
+
+      })
+      
+      //이메일 인증
+      $('#emailApi').click(function(){
+         mmail = $('#email1').val().trim() + $('#email2 option:selected').val().trim();   
+         console.log(mmail);
+         //num = "";
+         $.ajax({ 
+            url : '/MProject/member/MailCertify.do',
+            data : {"email": mmail}, 
+            type : 'post',
+            dataType: 'json', 
+            success : function(res){ 
+               authNum = res.authNum;
+               a=window.open("mailwindow.jsp", "이메일인증", "width=450  height=350 top=300");
+
+            },
+            error: function(xhr){
+               alert(xhr.status);
+            }
+         });
+   
+
+      }); 
+   
+      function authChk(val){
+         return val;
+      }
+      
+      
+      //전화번호 체크
+      $('#hp').on('keyup',function(){
+         hpvalue = $(this).val().trim();
+         
+         rehp =  /^[0-9]{2,3}-[0-9]{3,4}-[0-9]{4}$/; //전화번호 정규화
+         
+         if(rehp.test(hpvalue)){
+            okpro($('#hp'));
+         }else{
+            nopro($('#hp'), "형식오류 입니다");
+         }
+      })
+      
+      //생년월일 체크
+      $('#bir').on('change',function(){
+         birvalue = $(this).val();
+         now = new Date();
+         today = now.getFullYear();
+         bday = new Date(birvalue).getFullYear();
+         age = today-bday+1; //생년월일 정규화
+         if(age>9){
+            okpro(this);
+         }else{
+
+            vs = $(this).parents(".form-group");
+            vs.find('img').remove();
+            vs.find('span').remove();
+            vs.append("<span> 10살미만은 가입할 수 없습니다</span>");
+            $('span').css('color', 'red');
+            $(this).css('border-color', 'red');
+         }
+      })
+
+      // 회원가입신청 - submit(전송) 실행 - form이 있어야함
+      $('form').on('submit', function(){
+         //원래 가지고 있는 이벤트기능 금지 = form에서 onsubmit="return false;"
+         event.preventDefault(); 
+         //console.log($('#email1').val());
+         //아이디 중복검사했는지 확인
+         if($('#id').val().trim()==""){ 
+            alert('아이디를 입력하세요'); 
+            return false; 
+         }  
+         if(mem_Id=="" || mem_Id!=$('#id').val().trim()){
+            alert('아이디 중복검사 해주세요');
+            return false;
+         } 
+         if($('#name').val().trim()==""){
+            alert('이름을 입력하세요'); 
+            return false;
+         }
+         if($('#gender').val().trim()=="선택"){
+            alert('성별을 선택해주세요');
+            return false;
+         }
+         if($('#bir').val()==""){
+            alert('생년월일을 입력하세요'); 
+            return false;
+         } 
+         if($('#email1').val().trim()==""){
+            alert('메일을 입력하세요'); 
+            return false;
+         }
+         if($("#v").children().is('span')==false && $("#v").children().is('img')==false){
+            alert('이메일 인증 해주세요'); 
+            return false;
+         }
+         if($('#pwd').val().trim()==""){
+            alert('비밀번호를 입력하세요'); 
+            return false;
+         }
+         if($('#checkpass').val().trim()==""){
+            alert('비밀번호를 확인하세요'); 
+            return false;
+         }
+         if($(".form-group").children().is('span')){
+            alert('맞지않는 입력정보가 존재합니다.'); 
+            return false;
+         }
+//          email = $('#mail').val().trim();
+         //입력한 값을 가져온다 - val()
+/*           datas = $('.form-control').serialize();
+         console.log(datas);
+         datas = $('.form-control').serializeArray();
+         console.log(datas);  */
+          datas = $('.form-control').serializeJSON();  //외부 스크립트 필요 serializejson.js
+         console.log(datas);  
+           $.ajax({
+            url : '/MProject/member/Insert.do',
+            type : 'post',
+            data : datas,
+            dataType : 'json',
+            success: function(res){
+               
+               if(res.sw == "ok"){
+                  alert('회원가입이 완료되었습니다!');
+                  success();
+               }else{
+                  //실패하면 어쩌지 돌아가나 메인화면으로?
+               }
+            },
+            error: function(xhr){
+               alert("상태 : " + xhr.status);
+            }
+            
+         }); 
+
+      });
+      
+      success = function(){
+         window.location.href="memberLoginShow.jsp";
+       };
+       
+
+}); //달러 펑션
+ 
+</script>
+
+<style>
+ 
+body{
+   width: 100%;
+   height: 100%;
+   background-color: #f7f7f7;
+   box-sizing : border-box;
+}
+
+
+.container{
+   margin-left: 30%;
+   margin-top: 4%;
+   height: auto;
+   width: 740px;
+}
+.col-sm-2{
+   width : 25%;
+}
+h2 {
+   float :left;
+   display: inline-block;
+}
+
+hr{
+   margin: 37px 2% 60px 2%;
+   width: 230px;
+   float :left;
+   border : 0;
+   height: 1px;
+   background-color: #00bd55;   
+}
+#fir{
+   margin-left: 7%;
+}
+.form-horizontal{
+   background: white;
+   border: 1px solid lightgrey;
+}
+#email1, #email2{
+   display: inline-block;
+} 
+.info{
+   margin-left : 23%;
+}
+.form-group{
+   clear: both;
+}
+.regg{
+   margin-top: 40px;
+   margin-left : 200px;
+}
+
+.titlebar{
+   background: white;
+}
+
+hr:last-child{
+   width: 640px;
+    margin: 37px 0 0 6%;
+    background-color: white;
+}
+</style>
+</head>
+<body>
+   <div class="top">
+         <div class="busok"> 
+         <a> 042-222-8201</a> 
+                     <a > AniHand@naver.com</a>
+      </div>
+      <div class="loginNmp">  
+         <a id="mypg"  class="ass"><img class="pro" alt="" src="../images/프로필.png"><span id="mp"></span></a> 
+         <a id="logout" class="ass"><span id="lo">[→ 로그아웃</span></a>  
+      </div>
+   </div>
+      <div class="titlebar">
+      <div class="menuNav">
+      <a id="gohome"><img class="logo" alt="" src="../images/anihand.png"></a>
+               <ul class="smmenu">  
+            <li><a class="as" href="../statistic/index.jsp">유기동물통계</a></li>
+            <li><a class="as" href="../adAnimalList/adAnimalMain.jsp">보호동물</a></li>
+            <li><a class="as" href="../missingPet/missingPet.jsp">실종동물</a></li>
+            <li><a class="as" href="../intrstPage/ShelterAdoptMain.jsp">입양</a></li>
+            <li><a class="as" href="../serviceRequest/servCalendar.jsp">자원봉사</a></li>
+            <li><a class="as" href="../donate/donate.jsp">후원</a></li> 
+            <li><a class="as" href="">이벤트</a></li> 
+            <li><a class="as" href="../noticeBoard/board.jsp">공지사항</a></li>
+            <li><a class="as" href="">게시판</a></li>
+         </ul>
+      </div>
+   </div> 
+   
+   
+   
+   <div class="container">
+      
+      <form class="form-horizontal">
+   <hr id="fir"><h2> 회원가입 </h2><hr><br><br>
+         <div class="form-group">
+         <h6 class="info">※아이디는 영문대소문자로 시작하는 영문+숫자 조합의 4~5자리 입니다.</h6>
+            <label class="control-label col-sm-2" for="id">아이디:</label> 
+            <div class="col-xs-3">
+               <input type="text" class="form-control" id="id"
+                   name="mem_id">
+
+            </div>
+            <button class="btn btn-success btn-sm" id="idck" type="button">중복검사</button>
+         </div>
+
+         <div class="form-group">
+            <label class="control-label col-sm-2" for="name">이름:</label> 
+            <div class="col-xs-3">
+               <input type="text" class="form-control" id="name"
+                   name="mem_nm">
+
+            </div>
+
+         </div>
+
+
+         <div class="form-group">
+            <label class="control-label col-sm-2" for="name">성별:</label> 
+            <div class="col-xs-3">
+               <select class="form-control" id="gender" name="mem_gender">
+                  <option>선택</option>
+                  <option>여성</option>
+                  <option>남성</option>
+               </select>
+            </div>
+         </div>
+
+         <div class="form-group">
+            <label class="control-label col-sm-2" for="bir">생년월일:</label> 
+            <div class="col-sm-3">
+               <input type="date" class="form-control" id="bir"
+                  placeholder="Enter bir" name="mem_bir">
+
+            </div>
+         </div>
+
+         <div class="form-group" id="v">
+            <label class="control-label col-sm-2" for="email">메일:</label> 
+            <div class="col-xs-3"> 
+               <input type="text" class="form-control" id="email1" 
+                name="mem_mail1">
+                </div>
+                <div class="col-sm-3"> 
+                  <select class="form-control" id="email2" name="mem_mail2">
+                  <option>@naver.com</option>
+                  <option>@daum.net</option>
+                  <option>@gmail.com</option>
+                  <option>@nate.com</option>
+                  <option>@hanmail.net</option>
+               </select> 
+            </div>
+            <button class="btn btn-success btn-sm" id="emailApi" type="button">이메일 인증</button>
+         </div>
+
+         <p id="p"></p>
+
+         <div class="form-group">
+            <label class="control-label col-sm-2" for="pwd">비밀번호:</label> 
+            <div class="col-sm-3">
+               <input type="password" class="form-control" id="pwd"
+                   name="mem_pass">
+
+            </div>
+         </div>
+
+
+         <div class="form-group">
+            <label class="control-label col-sm-2" for="pass">비밀번호 확인:</label>
+            <div class="col-sm-3">
+               <input type="password" class="form-control" id="checkpass">
+            </div>
+         </div>
+
+         <div class="form-group">
+            <label class="control-label col-sm-2" for="hp">휴대폰번호:</label> 
+            <div class="col-sm-3">
+               <input type="text" class="form-control" id="hp"
+                  placeholder="010-1234-5678" name="mem_telno">
+
+            </div>
+         </div>
+         
+        <div class="form-group">
+      <label class="control-label col-sm-2" for="zip">우편번호:</label>
+      <div class="col-xs-2">          
+        <input type="text" class="form-control" id="sample6_postcode"  name="mem_zip" readonly="readonly">
+      </div>
+      <div class="col-sm-5">     
+        <input class="btn btn-success btn-sm" type="button" onclick="sample6_execDaumPostcode()" value="우편번호 찾기"><br>
+      </div>
+     </div>
+      
+       <div class="form-group">
+      <label class="control-label col-sm-2" for="zip">주소:</label>
+      <div class="col-sm-6">          
+        <input type="text" class="form-control" id="sample6_address" name="mem_add1" readonly="readonly">
+      </div>
+     </div>
+
+         <span id="guide" style="color:#999;display:none"></span> <!--이게뭐징  -->
+     
+       <div class="form-group">
+      <label class="control-label col-sm-2" for="zip">상세주소:</label>
+      <div class="col-sm-6">          
+        <input type="text" class="form-control" id="sample6_detailAddress" name="mem_add2">
+      </div>    
+    </div>
+  
+
+         <div class="form-group">
+            <div class="col-sm-offset-2 col-sm-10">
+               <button type="submit" class="btn btn-success regg">가입</button>
+            </div>
+         <hr></div>
+       </form>
+   </div>
+
+<!--    <div class="form-group">
+            <div class="col-sm-offset-2 col-sm-10">
+               <a href="memberLoginShow.jsp"><input type="button" class="btn btn-default" value="로그인 창"></a>
+            </div>
+         </div>
+      </form>
+   </div> -->
+   
+   
+   <div class="bottombar">
+      <p id="copyri">Copyright © AnyHand Corp. All Rights Reserved </p>
+   </div>
+  
+</body>
+</html>

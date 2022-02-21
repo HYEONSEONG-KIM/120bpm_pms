@@ -1,0 +1,6 @@
+--.mem_id(rs.getString("MEM_ID"))
+SELECT '.' || LOWER(COLUMN_NAME)||
+    '(rs.get'||DECODE(DATA_TYPE, 'NUMBER', 'Int', 'String')||
+    '("'||COLUMN_NAME||'"))'
+FROM COLS
+WHERE TABLE_NAME = 'MEMBER';

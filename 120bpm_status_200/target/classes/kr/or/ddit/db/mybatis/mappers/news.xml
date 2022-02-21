@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.news.dao.NewsDAO">
+	<sql id="searchFrag">
+			<if test="simpleSearch!=null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.searchWord)">
+			AND
+				<choose>
+					<when test="simpleSearch.searchType eq 'memId'">
+						INSTR(MAKENAMEFORMAT(h.MEM_FNM, h.MEM_LNM, h.MEM_ID ), #{simpleSearch.searchWord}) > 0
+					</when>
+					<when test="simpleSearch.searchType eq 'title'" >
+						INSTR(bo_SJ, #{simpleSearch.searchWord}) > 0
+					</when>
+					<when test="simpleSearch.searchType eq 'cn'" >
+						INSTR(bo_CN, #{simpleSearch.searchWord}) > 0
+					</when>
+					<otherwise>
+						(
+							INSTR(MAKENAMEFORMAT(h.MEM_FNM, h.MEM_LNM, h.MEM_ID ), #{simpleSearch.searchWord}) > 0
+							OR INSTR(bo_SJ, #{simpleSearch.searchWord}) > 0
+							OR INSTR(bo_CN, #{simpleSearch.searchWord}) > 0
+						)
+					</otherwise>
+				</choose>
+	
+			</if>
+	
+	</sql>
+
+	
+	<insert id="addNews" parameterType="kr.or.ddit.news.vo.NewsVO" >
+	<selectKey order="BEFORE" keyProperty="boNo" resultType="int">
+		SELECT BOARD_NO_SEQ.NEXTVAL FROM DUAL
+	</selectKey>
+	INSERT INTO board (
+	    PRJCT_NO,
+	    MENU_CL_CODE,
+	    BO_NO,
+	    BO_SJ,
+	    BO_CN,
+	    MEM_ID,
+	    OTHBC_AT,
+	    BO_RGSDE 
+) VALUES (
+    #{prjctNo,jdbcType=NUMERIC},
+    #{menuClCode,jdbcType=VARCHAR},
+    #{boNo,jdbcType=NUMERIC},
+	#{boSj,jdbcType=VARCHAR},
+	#{boCn,jdbcType=CLOB},
+	#{memId,jdbcType=VARCHAR},
+	#{othbcAt,jdbcType=VARCHAR}, 
+    sysdate 
+)	
+	</insert>
+	
+	<select id="selectNewsTotalCount" parameterType="kr.or.ddit.work.vo.ExtendPagingVO" resultType="int">
+		 SELECT COUNT(*)
+		 FROM
+		 BOARD N INNER JOIN MEM H ON(N.MEM_ID =H.MEM_ID) 
+		 WHERE MENU_CL_CODE='NE' AND PRJCT_NO= #{detailSearch.prjctNo}
+		 <include refid="searchFrag"></include>
+	</select>
+	
+	
+	<update id="updateNews" parameterType="kr.or.ddit.news.vo.NewsVO">
+	 UPDATE BOARD
+    SET
+           	 BO_SJ =#{boSj,jdbcType=VARCHAR},
+             BO_CN =#{boCn,jdbcType=CLOB},
+             BO_UPDTDE =SYSDATE
+	WHERE
+    
+  
+   BO_NO =  #{boNo,jdbcType=NUMERIC}
+	
+	</update>
+	
+	<update id="addHeart" parameterType="kr.or.ddit.news.vo.NewsVO">
+		 UPDATE BOARD
+    SET
+           	 like_cnt= like_cnt+1 ,
+             BO_UPDTDE =SYSDATE
+	WHERE
+    
+  
+   BO_NO =  #{boNo,jdbcType=NUMERIC}
+	</update>
+	
+	<update id="removeHeart" parameterType="kr.or.ddit.news.vo.NewsVO">
+		 UPDATE BOARD
+    SET
+           	 like_cnt= like_cnt-1 ,
+             BO_UPDTDE =SYSDATE
+	WHERE
+  
+   BO_NO =  #{boNo,jdbcType=NUMERIC}
+	
+	</update>
+	
+	<select id="selectNewsDetail" parameterType="kr.or.ddit.news.vo.NewsVO" resultType="kr.or.ddit.news.vo.NewsVO"> 
+	SELECT
+					    PRJCT_NO,    MENU_CL_CODE,
+					    BO_NO,    BO_SJ,
+					    BO_CN,    N.MEM_ID, MAKENAMEFORMAT( H.MEM_FNM , H.MEM_LNM , H.MEM_ID ) MEM_NAME,
+					    MAKEDATEFORMAT(BO_RGSDE) BO_RGSDE,PROFL_IMG_NM,
+					   MAKEDATEFORMAT(BO_UPDTDE) BO_UPDTDE, BO_DELETE_AT
+					FROM
+					    BOARD N INNER JOIN MEM H ON(N.MEM_ID =H.MEM_ID) 
+					    WHERE MENU_CL_CODE='NE' AND  BO_NO=  #{boNo,jdbcType=NUMERIC}
+	</select>
+	<delete id="deleteNews" parameterType="kr.or.ddit.news.vo.NewsVO" >
+	  DELETE FROM board
+	WHERE
+	MENU_CL_CODE='NE' AND  BO_NO=  #{boNo,jdbcType=NUMERIC}
+	</delete>
+
+	<select id="selectNewsList" parameterType="kr.or.ddit.work.vo.ExtendPagingVO" resultType="kr.or.ddit.news.vo.NewsVO">
+		SELECT D.* FROM 
+		(
+			SELECT ROWNUM RNUM , C.* FROM 
+				(
+					SELECT
+					    PRJCT_NO,    MENU_CL_CODE,
+					    BO_NO,    BO_SJ,
+					    BO_CN,    N.MEM_ID, MAKENAMEFORMAT( H.MEM_FNM , H.MEM_LNM , H.MEM_ID ) MEM_NAME,
+					    MAKEDATEFORMAT(BO_RGSDE) BO_RGSDE,PROFL_IMG_NM,
+					   MAKEDATEFORMAT(BO_UPDTDE) BO_UPDTDE, BO_DELETE_AT, BO_RGSDE order_Day
+					FROM
+					    BOARD N INNER JOIN MEM H ON(N.MEM_ID =H.MEM_ID) 
+					    WHERE MENU_CL_CODE='NE' AND PRJCT_NO= #{detailSearch.prjctNo}
+					   <include refid="searchFrag"></include>
+					    ORDER BY ORDER_DAY DESC
+			     	) C 
+			    ) D 
+		    WHERE RNUM  BETWEEN  #{startRow} AND #{endRow}
+	</select>
+
+</mapper>

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.wiki.dao.WikiDAO">
+
+	<sql id="searchFrag">
+		<trim prefix=" WHERE " prefixOverrides="AND">
+			<if test="simpleSearch!=null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.searchWord)">
+				<choose>
+					<when test="simpleSearch.searchType eq 'title'">
+						INSTR(BO_SJ, #{simpleSearch.searchWord}) > 0
+					</when>
+					<when test="simpleSearch.searchType eq 'memId'">
+						INSTR(MEM_ID, #{simpleSearch.searchWord}) > 0
+					</when>
+
+					<otherwise>
+						(
+							INSTR(BO_SJ, #{simpleSearch.searchWord}) > 0
+							OR INSTR(MEM_ID,
+							#{simpleSearch.searchWord}) > 0
+						)
+					</otherwise>
+				</choose>
+			</if>
+		</trim>
+	</sql>
+
+
+	<select id="selectTotalRecord" parameterType="kr.or.ddit.wiki.vo.WikiPagingVO" resultType="int">
+		SELECT COUNT(*)
+		FROM BOARD
+		WHERE MENU_CL_CODE = 'WK'
+		<include refid="searchFrag" />
+	</select>
+
+	<select id="selectWikiList" parameterType="kr.or.ddit.wiki.vo.WikiPagingVO" resultType="kr.or.ddit.wiki.vo.BoardVO">
+		SELECT B.*
+		FROM(
+		SELECT ROWNUM RNUM, A.*
+		FROM (
+				SELECT
+				PRJCT_NO,   MENU_CL_CODE,
+				BO_NO,  BO_SJ,  BO_CN,
+				MEM_ID,PARENT_BO_NO,   BO_RGSDE,
+				LIKE_CNT,   BO_PARENT,  OTHBC_AT,    LEVEL
+				FROM BOARD
+				WHERE MENU_CL_CODE = 'WK'
+				AND PRJCT_NO = 5
+				<include refid="searchFrag" />
+				START WITH BO_NO IN (	SELECT BO_NO
+										FROM BOARD
+										WHERE BO_NO NOT IN (SELECT PARENT_BO_NO FROM BOARD WHERE PARENT_BO_NO IS NOT NULL))
+				CONNECT BY PRIOR PARENT_BO_NO = BO_NO
+				ORDER SIBLINGS BY BO_NO DESC
+
+				<if test="simpleSearch!=null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.sortType)">
+					<!-- ORDER SIBLINGS BY ${simpleSearch.sortType} DESC -->
+				</if>
+				<if test="simpleSearch!=null and @org.apache.commons.lang3.StringUtils@isBlank(simpleSearch.sortType)">
+					<!-- ORDER SIBLINGS BY BO_NO DESC -->
+				</if>
+			) A
+		) B
+		WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+
+
+
+</mapper>
+

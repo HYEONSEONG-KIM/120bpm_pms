@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.pushMsg.dao.PushMsgDAO">
+
+	<insert id="insertPushMsg" parameterType="kr.or.ddit.pushMsg.vo.PushMsgVO">
+		<selectKey keyProperty="pushCode" resultType="int" order="BEFORE">
+			SELECT NVL(MAX(PUSH_CODE),0)+1 FROM PUSH_MSG
+		</selectKey>
+
+		INSERT INTO push_msg (
+			PUSH_CODE,PUSH_MESSAGE,MEM_ID,CREATEDE
+		) VALUES (
+			#{pushCode,jdbcType=NUMERIC},
+			#{pushMessage,jdbcType=VARCHAR},
+			#{memId,jdbcType=VARCHAR},
+			SYSDATE
+		)
+	</insert>
+	
+	<insert id="insertAllPushMsg" parameterType="kr.or.ddit.pushMsg.vo.PushMsgVO">
+
+		INSERT ALL
+		<foreach collection="list" index="idx" item="push">
+			INTO push_msg VALUES(
+				(SELECT NVL(MAX(PUSH_CODE),0)+1 FROM PUSH_MSG) + #{idx},
+				#{push.pushMessage,jdbcType=VARCHAR},
+				#{push.memId,jdbcType=VARCHAR},
+				SYSDATE
+			)
+			
+		</foreach>
+		SELECT * FROM DUAL
+	</insert>
+	
+	<select id="msgList" parameterType="string" resultType="kr.or.ddit.pushMsg.vo.PushMsgVO">
+		SELECT A.*
+		FROM (
+			SELECT ROWNUM RNUM, B.*
+			FROM (
+				SELECT push_code, push_message, mem_id, createde
+				FROM
+				push_msg
+				WHERE MEM_ID = #{memId}
+				ORDER BY createde DESC
+			) B
+		) A
+			WHERE RNUM BETWEEN 1 AND 5
+
+	</select>
+	
+	<select id="memSetList" resultType="kr.or.ddit.mypage.vo.MemSetVO">
+		SELECT
+   			SETUP_CODE,    SETUP_CN_NO,    SETUP_DETAIL_NO,
+   		 	MEM_ID,    SETUP_VALUE
+		FROM
+    		mem_setup
+		WHERE SETUP_CODE = 'S00106'
+	</select>
+</mapper>

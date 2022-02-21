@@ -1,0 +1,19 @@
+<insert id="insertBoard" parameterType="kr.or.ddit.free.vo.FreeBoardVO">
+		<selectKey order="BEFORE" keyProperty="boNo" resultType="int">
+		SELECT BOARD_NO_SEQ.NEXTVAL FROM DUAL
+		</selectKey>
+		<!-- 게시글 추가 -->
+		INSERT INTO
+		BOARD(PRJCT_NO,MENU_CL_CODE,BO_NO,BO_SJ,BO_CN,MEM_ID,BO_RGSDE,LIKE_CNT,OTHBC_AT)
+		VALUES
+		(#{prjctNo,jdbcType=NUMERIC},
+		'FR',
+		#{boNo,jdbcType=NUMERIC},
+		#{boSj,jdbcType=VARCHAR},
+		#{boCn,jdbcType=CLOB},
+		#{memId,jdbcType=VARCHAR},
+		to_char(SYSDATE,'YYYY-MM-DD'),
+		0,
+		0)
+
+	</insert>

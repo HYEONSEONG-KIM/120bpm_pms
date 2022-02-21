@@ -1,0 +1,586 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>	
+<%@ taglib uri="http://www.springframework.org/tags/form" prefix="form" %>
+<%@ taglib uri="http://www.springframework.org/security/tags" prefix="security" %>
+ <!DOCTYPE html>
+<html>
+<head> 
+<script type="text/javascript" src="${cPath }/resources/js/jquery-3.6.0.min.js"></script>
+
+<!-- 추가할 스크립트-->
+<script src="//blueimp.github.io/JavaScript-Load-Image/js/load-image.all.min.js"></script>
+<script type="text/javascript" src="${pageContext.request.contextPath }/resources/jQuery-File-Upload-master/jQuery-File-Upload-master/js/vendor/jquery.ui.widget.js"></script>
+<script src="${cPath}/resources/jQuery-File-Upload-master/jQuery-File-Upload-master/js/jquery.iframe-transport.js"></script>
+<script src="${cPath}/resources/jQuery-File-Upload-master/jQuery-File-Upload-master/js/jquery.fileupload.js"></script>
+<link rel="stylesheet" href="${cPath}/resources/jQuery-File-Upload-master/jQuery-File-Upload-master/css/jquery.fileupload-ui.css">
+<link rel="stylesheet" href="${cPath}/resources/jQuery-File-Upload-master/jQuery-File-Upload-master/css/jquery.fileupload.css">
+<script type="text/javascript" src="${cPath}/resources/jQuery-File-Upload-master/jQuery-File-Upload-master/js/jquery.fileupload-process.js"></script>
+<!-- 여기까지만 추가하시면 됩니다 -->
+
+<!-- 팬시트리용 -->
+<script type="text/javascript" src="${cPath}/resources/js/fancytree/jquery.fancytree-all-deps.min.js"></script>
+<!--  팬싵트리 디자인-->
+<%--  <link rel="stylesheet" href="${cPath }/resources/js/fancytree/skin-win8/ui.fancytree.min.css"> --%>
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.fancytree/2.38.0/skin-bootstrap/ui.fancytree.min.css" integrity="sha512-ZNPDR7ghmCig7eBuBHYMFeJix4+wxZ37Ky5RmhU/CbpzATUO2sLhB5HJaRCWirl7YHJDQvmE3rbf4FOQOttygg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+ <!-- <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery.fancytree/2.6.0/src/jquery.fancytree.wide.js"></script> 
+  -->
+ 
+ <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery.fancytree/2.6.0/src/jquery.fancytree.filter.js"></script>
+ <link rel="stylesheet" href="${cPath}/resources/css/commons.css">
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<style type="text/css">
+
+.cost {
+/* 	padding-right: 15px;
+	padding-left: 15px;
+	margin-right: auto;
+	margin-left: auto; */
+	display: grid;
+	 grid-template-columns: 1fr 1fr;
+}
+.fileLeft{
+/* 	float: left;
+	width: 48%; */
+}
+.fileRight{
+	/* float: right;
+	width: 48%; */
+}
+ 
+span.fancytree-title {
+    width: 300px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sizing{
+overflow:auto;
+height: 200px;
+}
+ div#tree {
+    width: 90%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid 1px solid rgba(0,0,0,.12);
+    box-shadow: 0 2px 2px 0 rgba(0,0,0,.14),0 3px 1px -2px rgba(0,0,0,.2),0 1px 5px 0 rgba(0,0,0,.12);
+  }
+  
+    table.fancytree-container {
+    table-layout: fixed;
+    outline: 0;  /* No focus frame */
+  }
+  
+  #tree{
+  font-size: 1.2em;
+  }
+  
+  .fileList{
+  display: none;
+  }
+</style>
+</head>
+<body>
+<c:if test="${not empty message }">
+	<script type="text/javascript">
+		Swal.fire({
+			 title: "잘못된 요청입니다!",
+			  text:  "${message }",
+			  icon: "error",
+			  button: "OK",
+			}) 
+		
+	</script>
+</c:if>
+<c:if test="${not empty message }">
+	<script type="text/javascript">
+		Swal.fire({
+			 title: "잘못된 요청입니다!",
+			  text:  "${message }",
+			  icon: "error",
+			  button: "OK",
+			}) 
+	</script>
+</c:if>
+
+<c:if test="${not empty downLoadFail }">
+	<script type="text/javascript">
+		Swal.fire({
+			 title: "파일 다운로드 실패",
+			  text:  "${downLoadFail}",
+			  icon: "error",
+			  button: "OK",
+		}) 
+ <% session.removeAttribute("downLoadFail"); %>
+	</script>
+ </c:if>
+
+ <div class="cost">
+ 	<div class="fileLeft">
+ 	<div id="tree" ></div>
+ 	
+ 	
+ 	</div>
+
+ 	<div class="fileRight">
+    <label>파일명 검색</label>
+    <div class="input-group mb-3">
+     <div class="input-group-prepend">
+    <input name="search" placeholder="파일명" class="form-control" autocomplete="off">
+    <button id="btnResetSearch" class="resetBtn btn"><img class="resetImg" src="${cPath}/resources/imgs/img/reset.png"></button>
+    </div>
+  	 	<p>
+    <span id="matches"></span>
+  </p>
+  </div>
+  
+  
+  
+  
+  
+<form id="fileupload" enctype="multipart/form-data">
+ <span class="btn btn-success fileinput-button">
+  <i class="glyphicon glyphicon-plus"></i>
+     <span>파일 선택</span>
+	<input name="files" type="file" multiple="multiple"  />
+	</span>
+	<!-- 각자가 사용할 파일 menuClcode의 value를 지정하면 됩니다-->
+	<input type="hidden" value="FI" name="menuClCode">
+ </form>
+ 
+  
+  <form:form commandName="file"  method="Post" action="${cPath }/project/${pCode}/file/create">
+   <div class="sizing">
+	<table class=' template-upload fade image in'>
+	<tbody class='fileSet'> 
+	
+	</tbody>
+	</table>
+	</div>
+	<!-- ex) 일감폼의 경우(일감제출버튼  -->
+ 	<button class="btn insertBtn">저장</button>
+  </form:form>
+ 
+<%--  	<form id="fileList"  enctype="multipart/form-data">
+	
+	
+	<!--각자의 폼에 이 테이블을 넣어주면 됩니다. -->
+	 <div class="sizing">
+	<table class=' template-upload fade image in'>
+	<tbody class='fileSet'> 
+	
+	</tbody>
+	</table>
+	</div>
+	<!-- ex) 일감폼의 경우(일감제출버튼  -->
+ 	<button class="btn insertBtn">저장</button>
+ </form> --%>
+ 
+  </div>
+ </div>
+		<div>
+		
+
+ 
+ 
+<!-- 각자가 사용하는 폼
+ex) 일갘 추가를 위한 폼 -->
+ 
+  </div>
+ 
+<!-- 성공한 경우 -->
+<!--  <form id="fileForm" enctype="multipart/form-data">
+	<input name="files" type="file" multiple="multiple" id="fileupload" />
+	<input type="hidden" value="FI" name="menuClCode">
+</form>
+ 
+<form > 
+	
+ 
+  
+  <!-- 파일 업로드를 위한 폼 
+  
+  버튼을 클릭하면 파일 추가를 위한 창이 열립니다 버튼 추가될 필요 없습니다. 
+  -->
+  
+  
+  
+
+<script type="text/javascript">
+var glyph_opts = {
+		 preset: "bootstrap3",//awesome5
+	        	 map: {
+	        	  _addClass: "glyphicon",
+	        	  checkbox: "glyphicon-unchecked",
+	        	  checkboxSelected: "glyphicon-check",
+	        	  checkboxUnknown: "glyphicon-expand",  // "glyphicon-share",
+	        	  dragHelper: "glyphicon-play",
+	        	  dropMarker: "glyphicon-arrow-right",
+	        	  error: "glyphicon-warning-sign",
+	        	  expanderClosed: "glyphicon-chevron-right",  // glyphicon-plus-sign
+	        	  expanderLazy: "glyphicon-chevron-right",  // glyphicon-expand
+      	          expanderOpen: "glyphicon-chevron-down",
+	        	  loading: "glyphicon-refresh fancytree-helper-spin",
+	        	  nodata: "glyphicon-info-sign",
+	        	  noExpander: "",
+	        	  radio: "glyphicon-remove-circle",  // "glyphicon-unchecked",
+	        	  radioSelected: "glyphicon-ok-circle",  // "glyphicon-check",
+	        	  // Default node icons.
+	        	  // (Use tree.options.icon callback to define custom icons based on node data)
+	        	  doc: "glyphicon-file",
+	        	  docOpen: "glyphicon-file",
+	        	  folder: "glyphicon-folder-close",
+	        	  folderOpen: "glyphicon-folder-open"  
+	        	}
+}
+
+
+$(function(){
+	
+	
+	
+	
+	var tree = $("#tree").fancytree("getTree");
+	//tree.reload()
+	
+	
+	$.ui.fancytree.getTree("#tree").expandAll();
+	
+	$("#tree span.fancytree-title").tooltip();
+	
+	var tree = $.ui.fancytree.getTree("#tree");
+
+/* 
+	$("input[name=search]").keyup(function(e){
+	    var n,
+	      opts = {
+	        autoExpand: $("#autoExpand").is(":checked"),
+	        leavesOnly: $("#leavesOnly").is(":checked")
+	      },
+	      match = $(this).val();
+
+	    if(e && e.which === $.ui.keyCode.ESCAPE || $.trim(match) === ""){
+	      $("button#btnResetSearch").click();
+	      return;
+	    }
+	    if($("#regex").is(":checked")) {
+	      // Pass function to perform match
+	      n = tree.filterNodes(function(node) {
+	        return new RegExp(match, "i").test(node.title);
+	      }, opts);
+	    } else {
+	      // Pass a string to perform case insensitive matching
+	      n = tree.filterNodes(match, opts);
+	    }
+	    $("button#btnResetSearch").attr("disabled", false);
+	    $("span#matches").text("(" + n + " matches)");
+	  }).focus();
+
+	  $("button#btnResetSearch").click(function(e){
+	    $("input[name=search]").val("");
+	    $("span#matches").text("");
+	    tree.clearFilter();
+	  }).attr("disabled", true);
+ */
+
+
+	 $("input[name=search]").on("keyup", function(e){
+	      var n,
+	        tree = $.ui.fancytree.getTree(),
+	        args = "autoApply autoExpand fuzzy hideExpanders highlight leavesOnly nodata".split(" "),
+	        opts = {},
+	        filterFunc = $("#branchMode").is(":checked") ? tree.filterBranches : tree.filterNodes,
+	        match = $(this).val();
+
+	      $.each(args, function(i, o) {
+	        opts[o] = $("#" + o).is(":checked");
+	      });
+	      opts.mode = $("#hideMode").is(":checked") ? "hide" : "dimm";
+
+	      if(e && e.which === $.ui.keyCode.ESCAPE || $.trim(match) === ""){
+	        $("button#btnResetSearch").click();
+	        return;
+	      }
+	      if($("#regex").is(":checked")) {
+	        // Pass function to perform match
+	        n = filterFunc.call(tree, function(node) {
+	          return new RegExp(match, "i").test(node.title);
+	        }, opts);
+	      } else {
+	        // Pass a string to perform case insensitive matching
+	        n = filterFunc.call(tree, match, opts);
+	      }
+	      $("button#btnResetSearch").attr("disabled", false);
+	      $("span#matches").text("(" + n + " matches)");
+	    }).focus();
+
+	    $("button#btnResetSearch").click(function(e){
+	      $("input[name=search]").val("");
+	      $("span#matches").text("");
+	      tree.clearFilter();
+	    }).attr("disabled", true);
+
+	
+	
+})
+ 
+	
+	$("#tree").fancytree({
+		  checkbox: true,
+		  extensions: ["filter" , "glyph"],
+		  quicksearch: true,
+	      glyph:  glyph_opts,  
+	        source:{
+	    		url:location.pathname,
+	    		cache:true,
+	    		 
+	    	}/* ,wide: {
+	            iconWidth: "1em",       // Adjust this if @fancy-icon-width != "16px"
+	            iconSpacing: "0.5em",   // Adjust this if @fancy-icon-spacing != "3px"
+	            labelSpacing: "0.1em",  // Adjust this if padding between icon and label != "3px"
+	            levelOfs: "1.5em"       // Adjust this if ul padding != "16px"
+	          }
+	    	 */
+	    	,tooltip: function(event, data) { 
+	    	        /* var node = data.node,
+    	          data = node.data;
+				console.log(node)
+    	        if( data.title ) {
+    	          return node.title;
+    	        }   */
+    	      },
+	    	lazyLoad: function(event, data){
+		      var node = data.node;
+		      console.log(node.key)
+		      data.result = {
+		    	url: location.pathname,
+		        data: {clCode:node.key},
+		        cache: false
+		      };
+		} , 
+		activate: function(event, data){
+		     var node = data.node;
+			 var attatch = node.adaptee;
+			 console.log(node);  
+			 console.log(attatch);  
+	 
+		    },
+		    click : function(event, data){
+		    	 var node = data.node;
+				 var attatch = node.adaptee;
+		    	
+		    },
+		    filter: {
+				autoApply: true,   // Re-apply last filter if lazy data is loaded
+				autoExpand: false, // Expand all branches that contain matches while filtered
+				counter: true,     // Show a badge with number of matching child nodes near parent icons
+				fuzzy: false,      // Match single characters in order, e.g. 'fb' will match 'FooBar'
+				hideExpandedCounter: true,  // Hide counter badge if parent is expanded
+				hideExpanders: false,       // Hide expanders if all child nodes are hidden by filter
+				highlight: true,   // Highlight matches by wrapping inside <mark> tags
+				leavesOnly: false, // Match end nodes only
+				nodata: true,      // Display a 'no data' status node if result is empty
+				mode: "dimm"       // Grayout unmatched nodes (pass "hide" to remove unmatched node instead)
+			},
+		
+		
+		});
+
+/* $("#tree").fancytree({
+	checkbox: true,
+	extensions: ["filter"],
+    quicksearch: true,
+    
+	source:{
+		url:location.pathname,
+		cache:true,
+		
+		 
+	},
+	lazyLoad: function(event, data){
+	      var node = data.node;
+	      console.log(node.key)
+	      data.result = {
+	    	url: location.pathname,
+	        data: {clCode:node.key},
+	        cache: false
+	      };
+	} , 
+	activate: function(event, data){
+	    var node = data.node;
+		 //var attatch = node.adaptee;
+		console.log(node); */
+	   /*
+	    console.log(attatch)
+	    $("#echoActive").text(attatch);
+	    resp = "";
+     for(let prop in attatch){
+	     	resp += prop
+	    }  */
+	     
+	   /*  },
+	    click : function(event, data){
+	    	 var node = data.node;
+			 var attatch = node.adaptee;
+	    	
+	    }, filter: {
+	        autoApply: true,  // Re-apply last filter if lazy data is loaded
+	        counter: true,  // Show a badge with number of matching child nodes near parent icons
+	        fuzzy: false,  // Match single characters in order, e.g. 'fb' will match 'FooBar'
+	        hideExpandedCounter: true,  // Hide counter badge, when parent is expanded
+	        highlight: true,  // Highlight matches by wrapping inside <mark> tags
+	        mode: "dimm"  // Grayout unmatched nodes (pass "hide" to remove unmatched node instead)
+	      }
+	
+	
+	 
+	
+}); */
+
+
+
+ 
+ //================================================
+ 
+ 
+ 
+let uploadForm = $("#fileupload")[0];
+let fileSet = $(".fileSet");
+let fileArea = $("#fileArea");  
+let tbody = $(".fileSet");
+ 
+// 파일 업로드를 위한  url 변경 마시오 
+
+ 	$("#fileupload").fileupload({
+	 		url:  "${pageContext.request.contextPath }/project/${pCode}/file/fileUpload",
+			autoUpload: true,
+			sequentialUploads: true,
+			dataType: 'json',
+			add: function(e, data){
+				 var isValid = true;
+				 var uploadFile = data.files;
+				 if(uploadFile.size > 5000000){
+					 alert('파일 용량은 5메가를 초과할 수 없습니다.');
+					 isValid = false;
+				 }
+				 
+				 if (isValid) {
+			          data.submit();
+				}
+			 }, progressall: function(e,data) {
+			        var progress = parseInt(data.loaded / data.total * 100, 10);
+			        $('#progress .bar').css(
+			          'width',
+			          progress + '%'
+			        );
+			      }, done: function (e, data) {
+			    	  trTags = [];
+			    	 let fileList  = data.result.files[0];
+			 			 $(fileList).each(function(index, file){
+			 				trTags.push(makeFileBtn(file));
+			 			 });
+			 		  
+			 			fileSet.append(trTags);//여기서 테이블에 넣어주고 있습니다
+			 		  	 
+			      }, fail: function(e, data){
+			        alert('서버와 통신 중 문제가 발생했습니다');
+			        foo = data;
+			      }
+			    });
+			  
+			
+		 
+ 	
+ function makeFileBtn(file){
+	 /*
+	 생성될 경우 넘겨질 vo의 수를 증가 시켜줌
+	 */
+if( $("tr").hasClass("fileName")==true){
+	 				  
+	 				 let fileName = $(".fileName").last();
+	 				 
+	 				 let no =	parseInt($(fileName).data("no")) +1 ;
+	 /*
+	 workFileList는 workVO에 파일을 담기위해 추가한 workFile을 담기위한 List 입니다.
+	 workFileList 는 각자의 파일 명을 담는 VO의 파일 명 변수 를 입력하시면 됩니다  
+	 workFileList[" + no +"].workFileSavedNm" 
+	.workFileSavedNm 의 명은 각 파일 vo의 변수명을 의미합니다 저장명과 파일이름 파일 저장 일자 삭제 여부 그리고 테이블에는 없지만 TEMP 여부를 담을 변수명을추가해주세요h
+	 				 
+	 $("<input type='hidden'>").prop("name","workFileList[" + no +"].workFileSavedNm").prop("value", file.fileSavedNm)
+	 */
+	 				return	$("<tr class='fileName'>").append(
+	 						$("<span >").html(file.fileNm)
+	 								   .append(
+	 						$("<input type='hidden'>").prop("name","attatchList[" + no +"].attatchSaveFileName").prop("value", file.fileSavedNm).prop("id" , file.fileSavedNm), 
+	 						 $("<input type='hidden'>").prop("name","attatchList[" + no +"].attatchRgsde").prop("value", file.fileRgsde),
+	 						 $("<input type='hidden'>").prop("name","attatchList[" + no +"].attatchTemptAt").prop("value",'0').prop("class" , "attatchtemptAt"), //이대로 업데이트 시 템프파일 아님으로 업데이트 됨
+	 						 $("<input type='hidden'>").prop("name","attatchList[" + no +"].attatchtDelAt").prop("value",'0').prop("class" , "attatchtDelAt")
+	 								   ).append(
+	 										   $("<button type='button' >").prop("class","deleteBtn").append("<i class='glyphicon glyphicon-ban-circle'></i>")
+	 								   	)
+	 								).data("no" ,  no);
+	 			  
+}else{
+	 				 return	$("<tr class='fileName'>").append(
+	 						$("<span >").html(file.fileNm)
+	 								   .append(
+	 					     $("<input type='hidden'>").prop("name","attatchList[0].attatchSaveFileName").prop("value", file.fileSavedNm).prop("id" , file.fileSavedNm), 
+	 						 $("<input type='hidden'>").prop("name","attatchList[0].attatchRgsde").prop("value", file.fileRgsde),
+	 						 $("<input type='hidden'>").prop("name","attatchList[0].attatchTemptAt").prop("value",'0').prop("class" , "attatchtemptAt"),
+	 						 $("<input type='hidden'>").prop("name","attatchList[0].attatchtDelAt").prop("value",'0').prop("class" , "attatchtDelAt")
+	 								   ).append(
+	 										   $("<button type='button'>").prop("class","deleteBtn").append("<i class='glyphicon glyphicon-ban-circle'></i>")
+	 								   	)
+	 								).data("no" , "0")
+	 			 		}
+	 
+	 
+	 
+ 			  }
+ 			
+ 			  
+ 
+  
+  	$(tbody).on("click", ".deleteBtn" , function(){
+  			console.log($(this).parents("tr")[0])
+  		 let  value = $(this).parents("tr")[0]
+  		 $(value).find(".attatchtemptAt").val("1") //템프파일 여부 1 로 변경하여 템프 파일으로 설정함
+  		 $(value).find(".attatchtDelAt").val("1") // 파일 삭제 여부를 1로 변경하여 파일 삭제된 파일로 설정함
+ 		 $(value).attr('style', "display:none;");
+  	});
+ 		  
+  	
+
+  	/* 
+  	 	$(fileInput).on("change" , function(event){
+  			 event.preventDefault();
+  			 let file = fileInput.files;
+  			 
+  			 const formData = new FormData(uploadForm);
+  			 if(formData.getAll("files")==null) return;
+  			 
+  			 //formData.append("files" , file)
+  			 //formData.append("menuClCode" , "FI")
+  		 
+  			 $.ajax({
+  				 type :"POST", 
+  				 url : "${pageContext.request.contextPath }/project/${fileVO.prjctNo}/file/fileUpload",
+  				 contentType :false, 
+  				 processData :false, 
+  				 data : formData, 
+  				 success : function(result){
+  				 console.log(result.result);
+  				  
+  				  }
+  			}) 
+  	 	}); */
+  
+
+       
+</script>
+   
+    
+</body>
+</html>

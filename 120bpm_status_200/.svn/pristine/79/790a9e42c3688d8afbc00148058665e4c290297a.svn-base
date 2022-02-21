@@ -1,0 +1,881 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.work.dao.WorkDAO">
+
+<sql id="whereWork" >
+ WHERE WORK_CODE = #{simpleSearch.workCode}
+</sql>
+
+<sql id="search">
+	<if test="simpleSearch != null">
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.startDate) and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.endDate)">
+			<![CDATA[
+				AND  (  
+				work_bgnde BETWEEN TO_DATE(#{simpleSearch.startDate}, 'YYYY-MM-DD') AND TO_DATE(#{simpleSearch.endDate}, 'YYYY-MM-DD')
+					)
+				]]>
+
+	<!-- OR WORK_ENDDE BETWEEN TO_DATE(#{simpleSearch.startDate}, 'YYYY-MM-DD')  AND TO_DATE(#{simpleSearch.endDate}, 'YYYY-MM-DD')
+				 OR (work_bgnde <= TO_DATE(#{simpleSearch.startDate}, 'YYYY-MM-DD') AND WORK_ENDDE >= TO_DATE(#{simpleSearch.endDate}, 'YYYY-MM-DD'))
+	 -->	
+			</if>
+			
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.workPriortCode)">
+					AND B.WORK_PRIORT_CODE =#{simpleSearch.workPriortCode}
+			</if>
+			
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.ctgryCode)">
+				AND A.CTGRY_CODE = #{simpleSearch.ctgryCode}
+			</if>
+			 
+			<if test="simpleSearch!=null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.searchWord)">
+				AND
+				<choose>
+					<when test="simpleSearch.searchType eq 'title'">
+						INSTR(work_sj, #{simpleSearch.searchWord}) > 0
+					</when>
+					<when test="simpleSearch.searchType eq 'memId'">
+						INSTR(MAKENAMEFORMAT(h.MEM_FNM, h.MEM_LNM, h.MEM_ID ), #{simpleSearch.searchWord}) > 0
+					</when>
+					<otherwise>
+						(
+							INSTR(work_sj, #{simpleSearch.searchWord}) > 0
+							OR INSTR(MAKENAMEFORMAT(h.MEM_FNM, h.MEM_LNM, h.MEM_ID ), #{simpleSearch.searchWord}) > 0
+						)
+					</otherwise>
+				</choose>
+			</if>
+			</if>	 
+
+</sql>
+
+<sql id="searchFrag">
+		<trim prefix=" WHERE " prefixOverrides="AND">
+				 a.prjct_no = #{workVO.prjctNo}
+			<if test="simpleSearch != null">
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.startDate) and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.endDate)">
+			<![CDATA[
+				AND  (  
+				work_bgnde BETWEEN TO_DATE(#{simpleSearch.startDate}, 'YYYY-MM-DD') AND TO_DATE(#{simpleSearch.endDate}, 'YYYY-MM-DD')
+				)
+				]]>
+<!-- 					OR WORK_ENDDE BETWEEN TO_DATE(#{simpleSearch.startDate}, 'YYYY-MM-DD')  AND TO_DATE(#{simpleSearch.endDate}, 'YYYY-MM-DD')
+				 OR (work_bgnde <= TO_DATE(#{simpleSearch.startDate}, 'YYYY-MM-DD') AND WORK_ENDDE >= TO_DATE(#{simpleSearch.endDate}, 'YYYY-MM-DD'))  --> 
+			</if>
+		 <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.workReqSttusCode)">
+		 		<choose>
+		 			<when test="simpleSearch.workReqSttusCode eq 'isNull'">
+		 			AND  WORK_REQ_STTUS_CODE IS NULL
+		 			</when>
+		 			<otherwise>
+		 			AND  WORK_REQ_STTUS_CODE =  #{simpleSearch.workReqSttusCode}
+		 			</otherwise>
+		 		</choose>
+		 </if>
+		 <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.workPriortCode)">
+					AND A.WORK_PRIORT_CODE =#{simpleSearch.workPriortCode}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.ctgryCode)">
+				AND A.CTGRY_CODE = #{simpleSearch.ctgryCode}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.workOthbcAt)">
+				AND WORK_OTHBC_AT  = #{simpleSearch.workOthbcAt}
+			</if>
+			<if test="simpleSearch!=null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.searchWord)">
+				AND
+				<choose>
+					<when test="simpleSearch.searchType eq 'title'">
+						INSTR(work_sj, #{simpleSearch.searchWord}) > 0
+					</when>
+					<when test="simpleSearch.searchType eq 'memId'">
+						INSTR(MAKENAMEFORMAT(h.MEM_FNM,h.MEM_LNM, h.MEM_ID ), #{simpleSearch.searchWord}) > 0
+					</when>
+					<otherwise>
+						(
+							INSTR(work_sj, #{simpleSearch.searchWord}) > 0
+							OR INSTR(MAKENAMEFORMAT(h.MEM_FNM,h.MEM_LNM, h.MEM_ID ), #{simpleSearch.searchWord}) > 0
+						)
+					</otherwise>
+				</choose>
+			</if>
+			</if>	 
+		</trim>
+	</sql>
+
+
+	<select id="selectAllWork" parameterType="kr.or.ddit.work.vo.ExtendPagingVO" resultType="kr.or.ddit.work.vo.WorkVO">
+               
+	SELECT d.*
+		FROM(
+ 			SELECT ROWNUM RNUM, c.*
+					FROM (
+						  SELECT
+						   	A.PRJCT_NO,    A.CTGRY_CODE,    B.CTGRY_NM,
+						   	<![CDATA[
+						   Lpad('    ▶ ', 6 * 5 * ( LEVEL - 1 ), '&nbsp;' ) ||work_sj  WORK_SJ,     WORK_CN,    a.MEM_ID, h.MEM_FNM , WORK_CODE,WORK_RGSDE rede,
+						    TO_CHAR(WORK_BGNDE , (SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00102' AND SETUP_CN_NO = 1)) WORK_BGNDE,    TO_CHAR( WORK_ENDDE , (SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00102' AND SETUP_CN_NO = 1)) WORK_ENDDE,    WORK_RGSDE,
+						    WORK_REQ_STTUS_CODE,    WORK_RETURN_WHY,    UPPER_WORK_CODE,
+						    WORK_STTUS_CODE, (SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CODE_NO=WORK_PRIORT_CODE ) PRIORT_NM , 
+						    WORK_PRIORT_CODE ,  (SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CODE_NO=WORK_STTUS_CODE ) WORK_STATUS,  
+						    WORK_PRGS_DGREE_POINT,MAKENAMEFORMAT(h.MEM_FNM, h.MEM_LNM, h.MEM_ID ) mem_NAMe ,
+						    WORK_OTHBC_AT,    WORK_UPDTDE , 
+						     CASE 
+                                 when TO_CHAR(sysdate,'yyyy-mm-dd') >  TO_CHAR(a.WORK_ENDDE,'yyyy-mm-dd') then 'PASSED' 
+                                 when (TO_CHAR(sysdate,'yyyy-mm-dd') <=  TO_CHAR(a.WORK_ENDDE,'yyyy-mm-dd')) and (TRUNC( to_date(a.WORK_ENDDE) -sysdate  ) <=7)  then  'SOON'   
+                                 else 'NOT'
+                    end 
+                    AS WORK_DATE_STATUS
+						    
+						FROM
+						    WORK A LEFT OUTER JOIN WORK_CATEGORY B ON(A.CTGRY_CODE = B.CTGRY_CODE)  
+						    right outer join mem h on (a.mem_id = h.mem_id)
+						     ]]>
+						    <include refid="searchFrag"></include>
+	 		   START WITH UPPER_WORK_CODE IS NULL 
+               CONNECT BY PRIOR WORK_CODE = UPPER_WORK_CODE
+               AND PRIOR A.PRJCT_NO = A.PRJCT_NO
+	<if test="simpleSearch != null">
+	  <if test="@org.apache.commons.lang3.StringUtils@isBlank(simpleSearch.sidx) and (simpleSearch.sidx) ==''">
+			 ORDER SIBLINGS BY  REDE DESC
+		 </if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.sidx) and (simpleSearch.sidx) !=''">
+			ORDER SIBLINGS BY 
+			<choose>
+				<when test="simpleSearch.sidx eq 'MEM_NAME'"> MEM_NAME </when>
+				<when test="simpleSearch.sidx eq 'WORK_PRIORT_CODE'"> WORK_PRIORT_CODE </when>
+				<when test="simpleSearch.sidx eq 'WORK_ENDDE'"> WORK_ENDDE </when>
+				<otherwise> WORK_PRGS_DGREE_POINT</otherwise>
+			</choose>
+			<choose>
+				<when test="simpleSearch.sortType eq 'desc'"> DESC </when>
+				<otherwise> ASC </otherwise>
+			</choose>
+		</if>
+	</if>
+		) C
+	)D
+	WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	
+	</select>
+
+
+
+
+	<select id="selectWorkCount" parameterType="kr.or.ddit.work.vo.ExtendPagingVO" resultType="int">
+		SELECT COUNT(*)
+			FROM
+		 WORK A LEFT OUTER JOIN WORK_CATEGORY B ON(A.CTGRY_CODE = B.CTGRY_CODE)  
+		  right outer join mem h on (a.mem_id = h.mem_id)  
+		<include refid="searchFrag" />
+	</select>
+	
+	<select id="selectCartegory" parameterType="int" resultType="kr.or.ddit.work.vo.WCartegoryVO">
+		
+		SELECT
+		    CTGRY_CODE,
+		    CTGRY_NM,
+		    PRJCT_NO
+		FROM
+		    WORK_CATEGORY
+		    WHERE  PRJCT_NO =#{workVO.prjctNo}
+	</select>
+	
+	
+	
+	
+	 <select id="selectMyWork" parameterType="kr.or.ddit.work.vo.ExtendPagingVO" resultType="kr.or.ddit.work.vo.WorkVO">
+	     
+ SELECT 
+		 D.*
+				 FROM 
+					 (
+					    SELECT  ROWNUM RNUM , C.*
+					    FROM 
+					    (
+							SELECT
+							    A.PRJCT_NO,    A.CTGRY_CODE,    B.CTGRY_NM,
+							    WORK_CODE,    WORK_SJ,    WORK_CN,
+							    a.MEM_ID,   TO_CHAR(WORK_BGNDE , (SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00102' AND SETUP_CN_NO = 1)) WORK_BGNDE,   
+							    TO_CHAR( WORK_ENDDE , (SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00102' AND SETUP_CN_NO = 1)) WORK_ENDDE,
+			 					MAKEDATEFORMAT(WORK_RGSDE)	WORK_RGSDE,   WORK_REQ_STTUS_CODE, 
+							    WORK_RETURN_WHY,  h.MEM_FNM ,h.MEM_LNM ,MAKENAMEFORMAT(h.MEM_FNM, h.MEM_LNM, h.MEM_ID ) mem_NAMe, WORK_RGSDE rede,
+							   
+							   NVL( (SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CODE_NO = WORK_REQ_STTUS_CODE),'승인요청전'  ) WORK_Req_Nm
+							    ,    UPPER_WORK_CODE,    WORK_STTUS_CODE,
+							   (SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CODE_NO=WORK_STTUS_CODE ) WORK_STATUS,
+							    WORK_PRIORT_CODE,     (SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CODE_NO=WORK_PRIORT_CODE ) PRIORT_NM ,
+							    WORK_PRGS_DGREE_POINT,    WORK_OTHBC_AT,     DECODE(WORK_OTHBC_AT , '1' ,'공개','0' ,'비공개') WORK_OPEN,
+							    WORK_UPDTDE , 
+							        CASE 
+                                 when TO_CHAR(sysdate,'yyyy-mm-dd') &gt;  TO_CHAR(a.WORK_ENDDE,'yyyy-mm-dd') then 'PASSED' 
+                                 when (TO_CHAR(sysdate,'yyyy-mm-dd') &lt;=  TO_CHAR(a.WORK_ENDDE,'yyyy-mm-dd')) and (TRUNC( to_date(a.WORK_ENDDE) -sysdate  ) &lt;=7)  then  'SOON'   
+                                      when (TO_CHAR(sysdate,'yyyy-mm-dd') &lt;  TO_CHAR(A.WORK_ENDDE,'yyyy-mm-dd')) and (TRUNC( to_date(A.WORK_ENDDE) -sysdate  ) &lt;=14)  then  '2WEEK'  
+                                 else 'NOT'
+                    end 
+                    AS WORK_DATE_STATUS
+					FROM
+					   		WORK A LEFT OUTER JOIN WORK_CATEGORY B ON(A.CTGRY_CODE = B.CTGRY_CODE)   
+					   		 RIGHT OUTER JOIN MEM H ON (A.MEM_ID = H.MEM_ID)
+						 	 <include refid="searchFrag" />
+						    AND  a.MEM_ID = #{workVO.memId}
+						    AND  A.WORK_DELETE_AT = '0'
+						    <if test="simpleSearch != null">
+						    <if test="@org.apache.commons.lang3.StringUtils@isBlank(simpleSearch.sidx) and (simpleSearch.sidx) ==''">
+						   			 ORDER  BY REDE DESC
+						    </if>
+						    <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.sidx) and (simpleSearch.sidx) !=''">
+										ORDER  BY 
+										<choose>
+											<when test="simpleSearch.sidx eq 'MEM_NAME'"> MEM_NAME </when>
+											<when test="simpleSearch.sidx eq 'WORK_PRIORT_CODE'"> WORK_PRIORT_CODE </when>
+											<when test="simpleSearch.sidx eq 'WORK_ENDDE'"> WORK_ENDDE </when>
+											<when test="simpleSearch.sidx eq 'WORK_SJ'"> WORK_SJ </when>
+											<when test="simpleSearch.sidx eq 'WORK_RGSDE'"> WORK_RGSDE </when>
+											<otherwise> WORK_PRGS_DGREE_POINT</otherwise>
+										</choose>
+										<choose>
+											<when test="simpleSearch.sortType eq 'desc'"> DESC </when>
+											<otherwise> ASC </otherwise>
+										</choose>
+									</if>
+						    </if>
+   					 ) C
+			 ) D
+  						 WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	 </select>
+	
+	
+	<select id="selectMyWorkCount" parameterType="kr.or.ddit.work.vo.ExtendPagingVO" resultType="int">
+		SELECT COUNT(*)
+			FROM
+		 WORK A LEFT OUTER JOIN WORK_CATEGORY B ON(A.CTGRY_CODE = B.CTGRY_CODE)    
+		 RIGHT OUTER JOIN MEM H ON (A.MEM_ID = H.MEM_ID)
+		<include refid="searchFrag" />
+		AND a.MEM_ID = #{workVO.memId}
+		AND  A.WORK_DELETE_AT = '0'
+		
+	</select>
+	
+	<select id="selectCommonCode" parameterType="String" resultType="kr.or.ddit.work.vo.CommonVO">
+	 SELECT
+		    CL_CODE,
+		    CODE_NO,
+		    CODE_NM     
+		FROM
+		    CMMN_CODE_DETAIL
+	WHERE CL_CODE =  #{clCode}
+	
+	</select>	
+	
+	<select id="selectMyWorkCheck" resultType="kr.or.ddit.work.vo.WorkVO" parameterType="kr.or.ddit.work.vo.WorkVO">
+	
+				SELECT
+							    A.PRJCT_NO,    A.CTGRY_CODE,    B.CTGRY_NM,
+							    WORK_CODE,    WORK_SJ,    WORK_CN,  h.MEM_FNM ,
+							    a.MEM_ID,   TO_CHAR(WORK_BGNDE , (SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00102' AND SETUP_CN_NO = 1)) WORK_BGNDE, 
+							    TO_CHAR( WORK_ENDDE , (SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00102' AND SETUP_CN_NO = 1)) WORK_ENDDE,
+							    WORK_RGSDE,    WORK_REQ_STTUS_CODE, MAKENAMEFORMAT(h.MEM_FNM, h.MEM_LNM, h.MEM_ID ) mem_NAMe,
+							    WORK_RETURN_WHY,
+							   NVL( (SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CODE_NO = WORK_REQ_STTUS_CODE),'승인요청전'  ) WORK_Req_Nm
+							    ,    UPPER_WORK_CODE,    WORK_STTUS_CODE,
+							   (SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CODE_NO=WORK_STTUS_CODE ) WORK_STATUS,
+							    WORK_PRIORT_CODE,     (SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CODE_NO=WORK_PRIORT_CODE ) PRIORT_NM ,
+							    WORK_PRGS_DGREE_POINT,    WORK_OTHBC_AT,     DECODE(WORK_OTHBC_AT , '1' ,'공개','0' ,'비공개') WORK_OPEN,
+							    WORK_UPDTDE    
+					FROM
+					   		WORK A LEFT OUTER JOIN WORK_CATEGORY B ON(A.CTGRY_CODE = B.CTGRY_CODE)   
+					   		 right outer join mem h on (a.mem_id = h.mem_id)
+	                             WHERE  A.PRJCT_NO = #{prjctNo}
+	                             AND a.MEM_ID = #{memId}
+	                             and work_code =   #{workCode}
+	</select>
+	
+					<select id="selectMyWorkPerMonth" resultType="kr.or.ddit.work.vo.WorkVO" parameterType="kr.or.ddit.work.vo.WorkVO">
+					
+					SELECT TO_CHAR(b.dt, 'YYYY-MM')work_rgsde
+				     , NVL(SUM(a.ReqMonth), 0) ReqMonth
+				  FROM ( SELECT TO_CHAR(work_rgsde, (SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00102' AND SETUP_CN_NO = 1)) work_rgsde
+				              , COUNT(*)  ReqMonth
+				           FROM work 
+				          WHERE (work_rgsde BETWEEN TO_DATE('2021-01-01', 'YYYY-MM-DD')
+				                             AND TO_DATE('2021-12-31', 'YYYY-MM-DD') )
+				           and mem_id =  #{memId} and prjct_no=#{prjctNo}
+				          GROUP BY work_rgsde
+				        ) a
+				        	<![CDATA[ 
+				      , ( SELECT TO_DATE('2021-01-01','YYYY-MM-DD') + LEVEL - 1 AS dt
+				            FROM dual 
+				         CONNECT BY LEVEL <= (TO_DATE('2021-12-31','YYYY-MM-DD') 
+				                            - TO_DATE('2021-01-01','YYYY-MM-DD') + 1)
+				                              ]]>   
+				        ) b
+				  WHERE b.dt = a.work_rgsde(+)
+				  GROUP BY TO_CHAR(b.dt, 'YYYY-MM') 
+				  ORDER BY TO_CHAR(b.dt, 'YYYY-MM')
+									
+					</select>
+	
+	<select id="selectMyWorkPercent" resultType="kr.or.ddit.work.vo.WorkVO" parameterType="kr.or.ddit.work.vo.WorkVO">
+		SELECT 
+	    A.ctgry_code,      
+	    b.ctgry_nm,
+		sum(work_prgs_dgree_point)/NVL(count(*),1) percent
+		FROM	WORK A LEFT OUTER JOIN WORK_CATEGORY B ON(A.CTGRY_CODE = B.CTGRY_CODE) 
+	    where mem_id =  #{memId} and A.prjct_no=#{prjctNo}
+	    group by A.ctgry_code ,
+	     A.prjct_no,
+	    mem_id ,   b.ctgry_nm
+	</select>
+	
+<select id="selectBookMarkWorkCount" parameterType="kr.or.ddit.work.vo.ExtendPagingVO" resultType="int">
+SELECT COUNT(*)
+				FROM
+				    work_bkmk a inner join WORK b on(a.work_code =b.work_code) 
+				    inner join WORK_CATEGORY c ON(A.CTGRY_CODE = c.CTGRY_CODE) 
+				    right outer join mem h on (a.mem_id = h.mem_id)
+				  	where a.mem_id  =#{workVO.memId}
+				   	and a.prjct_no = #{workVO.prjctNo}
+				   	 <include refid="search" />
+			
+</select>
+
+<resultMap type="kr.or.ddit.work.vo.WorkVO" id="bookMark" autoMapping="true">
+		<id property="workCode" column="work_code"/>
+		<collection property="bookMarks" ofType="kr.or.ddit.work.vo.WorkBkmkVO" autoMapping="true">
+			<id property="workBkmkCode" column="work_bkmk_code"/>
+		</collection>
+	</resultMap>
+
+<select id="selecBookMarkWork"  resultMap="bookMark" parameterType="kr.or.ddit.work.vo.ExtendPagingVO">
+	
+SELECT e.*
+		FROM(                            
+SELECT ROWNUM RNUM, d.*
+ from 
+(                         
+SELECT
+    a.work_bkmk_code,    a.prjct_no,    a.mem_id bookMarker , b.mem_id ,
+    a.work_code,    a.ctgry_code,    c.CTGRY_NM,    b.work_sj , MAKENAMEFORMAT(h.MEM_FNM, h.MEM_LNM, h.MEM_ID ) mem_NAMe
+    ,    WORK_CN ,TO_CHAR(WORK_BGNDE 
+, (SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00102' AND SETUP_CN_NO = 1)) WORK_BGNDE, TO_CHAR( WORK_ENDDE , (SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00102' AND SETUP_CN_NO = 1)) WORK_ENDDE,
+ WORK_RGSDE, WORK_REQ_STTUS_CODE,    WORK_RETURN_WHY, UPPER_WORK_CODE, WORK_STTUS_CODE,
+  (SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE  CODE_NO=WORK_PRIORT_CODE ) PRIORT_NM ,
+   WORK_PRIORT_CODE , (SELECT CODE_NM FROM CMMN_CODE_DETAIL 
+   WHERE CODE_NO=WORK_STTUS_CODE ) WORK_STATUS, WORK_PRGS_DGREE_POINT, WORK_OTHBC_AT, WORK_UPDTDE 
+   , h.MEM_FNM ,  CASE   when TO_CHAR(sysdate,'yyyy-mm-dd') &gt;  TO_CHAR(b.WORK_ENDDE,'yyyy-mm-dd') then 'PASSED' 
+                         when (TO_CHAR(sysdate,'yyyy-mm-dd') &lt;=  TO_CHAR(b.WORK_ENDDE,'yyyy-mm-dd')) and (TRUNC( to_date(b.WORK_ENDDE) -sysdate  ) &lt;=7)  then  'SOON'   
+                         when (TO_CHAR(sysdate,'yyyy-mm-dd') &lt;  TO_CHAR(b.WORK_ENDDE,'yyyy-mm-dd')) and (TRUNC( to_date(b.WORK_ENDDE) -sysdate  ) &lt;=14)  then  'SOON'   
+                         else 'NOT'
+                    end 
+                    AS WORK_DATE_STATUS
+   			
+FROM
+    WORK_BKMK A INNER JOIN WORK B ON(A.WORK_CODE =B.WORK_CODE) 
+    INNER JOIN WORK_CATEGORY C ON(A.CTGRY_CODE = C.CTGRY_CODE)  
+    right outer join mem h on (a.mem_id = h.mem_id)
+    
+	where a.mem_id  =#{workVO.memId}
+	and a.prjct_no = #{workVO.prjctNo}
+				 <include refid="search" />
+				<if test="simpleSearch != null">
+				  <if test="@org.apache.commons.lang3.StringUtils@isBlank(simpleSearch.sidx) and (simpleSearch.sidx) ==''">
+						   			 ORDER  BY WORK_RGSDE DESC
+						    </if>
+					<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.sidx) and (simpleSearch.sidx) !=''">
+						 ORDER  BY 
+						<choose>
+							<when test="simpleSearch.sidx eq 'MEM_NAME'"> MEM_NAME </when>
+							<when test="simpleSearch.sidx eq 'WORK_SJ'"> WORK_SJ </when>
+							<when test="simpleSearch.sidx eq 'WORK_PRIORT_CODE'"> WORK_PRIORT_CODE </when>
+							<when test="simpleSearch.sidx eq 'WORK_ENDDE'"> WORK_ENDDE </when>
+							<otherwise> WORK_PRGS_DGREE_POINT</otherwise>
+						</choose>
+						<choose>
+							<when test="simpleSearch.sortType eq 'desc'"> DESC </when>
+							<otherwise> ASC </otherwise>
+						</choose>
+					</if>
+				</if>
+				)   d
+ )e
+ 
+ WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	
+	</select>
+	
+	
+	
+<delete id="deleteBookMarkWork" parameterType="kr.or.ddit.work.vo.WorkBkmkVO"   >
+	DELETE FROM work_bkmk
+	WHERE    WORK_BKMK_CODE = #{workBkmkCode}
+	
+</delete>
+
+
+<insert id="insertBookMarkWork" parameterType="kr.or.ddit.work.vo.WorkBkmkVO" >
+	<selectKey order="BEFORE"  resultType="String" keyProperty="workBkmkCode"  >
+	SELECT 
+ 		'Q'|| #{prjctNo} ||'*' ||lpad( #{memId} , 16 , '0') ||'*' ||#{workCode}
+FROM DUAL
+	</selectKey>
+	INSERT INTO WORK_BKMK (
+	    WORK_BKMK_CODE,
+	    PRJCT_NO, 
+	    MEM_ID,
+	    WORK_CODE,
+	    CTGRY_CODE
+	) VALUES (
+	
+	#{workBkmkCode,jdbcType=VARCHAR},
+	#{prjctNo,jdbcType=NUMERIC},
+	#{memId,jdbcType=VARCHAR},
+	#{workCode , jdbcType=VARCHAR},
+	#{ctgryCode,jdbcType=VARCHAR}
+	)
+</insert>
+	
+<select id="selectBookMarkCheck"  parameterType="kr.or.ddit.work.vo.WorkBkmkVO"   resultType="kr.or.ddit.work.vo.WorkBkmkVO"  >
+	SELECT
+    WORK_BKMK_CODE,
+    PRJCT_NO,
+    MEM_ID,
+    WORK_CODE,
+    CTGRY_CODE
+FROM
+    WORK_BKMK
+    WHERE WORK_BKMK_CODE =  #{workBkmkCode}
+	
+	</select>
+	<resultMap type="kr.or.ddit.work.vo.WorkVO" id="WorkDetails" autoMapping="true">
+		<id property="workCode" column="WORK_CODE"/>
+		<collection property="workFileList" ofType="kr.or.ddit.work.vo.WorkFileVO" autoMapping="true">
+			<id property="workFileCode" column="work_file_code" />
+		</collection>
+		<collection property="workObserverList" ofType="kr.or.ddit.work.vo.ObserverVO" autoMapping="true">
+				<id property="observerId" column="OBSERVER_ID"/>
+				<id property="observerName" column="OBSERVER_NAME"/>		
+		</collection>
+	</resultMap>
+	<select id="selectWorkDetailView" parameterType="kr.or.ddit.work.vo.WorkVO"  resultMap="WorkDetails">
+		    SELECT
+		    		MAKENAMEFORMAT(h.MEM_FNM, h.MEM_LNM, h.MEM_ID ) mem_NAMe, h.mem_email,
+ 					A.PRJCT_NO,    A.CTGRY_CODE,    B.CTGRY_NM,
+				    a.WORK_CODE,    WORK_SJ,    WORK_CN,  h.MEM_FNM ,h.MEM_LNM ,
+				    a.MEM_ID,   TO_CHAR(WORK_BGNDE , (SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00102' AND SETUP_CN_NO = 1)) WORK_BGNDE, 
+				    TO_CHAR( WORK_ENDDE ,(SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00102' AND SETUP_CN_NO = 1)) WORK_ENDDE,
+				    TO_CHAR( WORK_RGSDE , (SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00102' AND SETUP_CN_NO = 1)) WORK_RGSDE,  
+				    WORK_REQ_STTUS_CODE,  WORK_RETURN_WHY,
+				    NVL( (SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CODE_NO = WORK_REQ_STTUS_CODE),'승인요청전'  ) WORK_Req_Nm
+				    ,    UPPER_WORK_CODE,    WORK_STTUS_CODE,
+				    (SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CODE_NO=WORK_STTUS_CODE ) WORK_STATUS,
+				    WORK_PRIORT_CODE,     (SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CODE_NO=WORK_PRIORT_CODE ) PRIORT_NM ,
+				    WORK_PRGS_DGREE_POINT,    WORK_OTHBC_AT,     DECODE(WORK_OTHBC_AT , '1' ,'공개','0' ,'비공개') WORK_OPEN,
+				    TO_CHAR( WORK_UPDTDE , (SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00102' AND SETUP_CN_NO = 1)) WORK_UPDTDE    , WORK_FILE_NM,   WORK_FILE_SAVED_NM, WORK_FILE_CODE, WORK_FILE_DEL_AT , 
+				    (select f.WORK_BKMK_CODE from  WORK_BKMK f  left outer join work a on (A.WORK_CODE = f.WORK_CODE)  
+                     WHERE F.MEM_ID =#{memId} and f.WORK_CODE =#{workCode} ) WORK_BK_AT ,PRJCT_NM
+                     , O.MEM_ID  OBSERVER_ID
+                     , (SELECT MEM_LNM||MEM_FNM  FROM MEM C WHERE C.MEM_ID= O.MEM_ID) OBSERVER_NAME , 
+                     WORK_DELETE_AT
+		FROM
+		   WORK A LEFT OUTER JOIN WORK_CATEGORY B ON(A.CTGRY_CODE = B.CTGRY_CODE)       
+		   RIGHT OUTER JOIN MEM H ON (A.MEM_ID = H.MEM_ID)
+		   LEFT OUTER JOIN WORK_FILE W ON (A.WORK_CODE = W.WORK_CODE)
+		   LEFT OUTER JOIN WORK_BKMK F ON (A.WORK_CODE = F.WORK_CODE)
+           left outer join observer o on (a.work_code = o.work_code)
+		   INNER JOIN PROJECT P ON  (A.PRJCT_NO = P.PRJCT_NO)
+		   WHERE   A.WORK_CODE = #{workCode} 
+		   AND (W.WORK_FILE_DEL_AT = '0' OR W.WORK_FILE_DEL_AT IS NULL) 
+	</select>
+	
+	
+	<select id="selectWorkDetail" parameterType="kr.or.ddit.work.vo.WorkVO"  resultMap="WorkDetails">
+ 
+		    SELECT
+		    		MAKENAMEFORMAT(h.MEM_FNM, h.MEM_LNM, h.MEM_ID ) mem_NAMe, h.mem_email,
+ 					A.PRJCT_NO,    A.CTGRY_CODE,    B.CTGRY_NM,
+				    a.WORK_CODE,    WORK_SJ,    WORK_CN,  h.MEM_FNM ,h.MEM_LNM ,
+				    a.MEM_ID,   TO_CHAR(WORK_BGNDE ,'yyyy-mm-dd') WORK_BGNDE, 
+				    TO_CHAR( WORK_ENDDE ,'yyyy-mm-dd') WORK_ENDDE,
+				    TO_CHAR( WORK_RGSDE ,'yyyy-mm-dd') WORK_RGSDE,  
+				    WORK_REQ_STTUS_CODE,  WORK_RETURN_WHY,
+				    NVL( (SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CODE_NO = WORK_REQ_STTUS_CODE),'승인요청전'  ) WORK_Req_Nm
+				    ,    UPPER_WORK_CODE,    WORK_STTUS_CODE,
+				    (SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CODE_NO=WORK_STTUS_CODE ) WORK_STATUS,
+				    WORK_PRIORT_CODE,     (SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CODE_NO=WORK_PRIORT_CODE ) PRIORT_NM ,
+				    WORK_PRGS_DGREE_POINT,    WORK_OTHBC_AT,     DECODE(WORK_OTHBC_AT , '1' ,'공개','0' ,'비공개') WORK_OPEN,
+				    TO_CHAR( WORK_UPDTDE , (SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00102' AND SETUP_CN_NO = 1)) WORK_UPDTDE    , WORK_FILE_NM,   WORK_FILE_SAVED_NM, WORK_FILE_CODE, WORK_FILE_DEL_AT , 
+				    (select f.WORK_BKMK_CODE from  WORK_BKMK f  left outer join work a on (A.WORK_CODE = f.WORK_CODE)  
+                     WHERE F.MEM_ID =#{memId} and f.WORK_CODE =#{workCode} ) WORK_BK_AT ,PRJCT_NM
+                     , O.MEM_ID  OBSERVER_ID
+                     , (SELECT MAKENAMEFORMAT(C.MEM_FNM, C.MEM_LNM, C.MEM_ID ) FROM MEM C WHERE C.MEM_ID= O.MEM_ID) OBSERVER_NAME , 
+                     WORK_DELETE_AT
+                     
+		FROM
+		   WORK A LEFT OUTER JOIN WORK_CATEGORY B ON(A.CTGRY_CODE = B.CTGRY_CODE)       
+		   RIGHT OUTER JOIN MEM H ON (A.MEM_ID = H.MEM_ID)
+		   LEFT OUTER JOIN WORK_FILE W ON (A.WORK_CODE = W.WORK_CODE)
+		   LEFT OUTER JOIN WORK_BKMK F ON (A.WORK_CODE = F.WORK_CODE)
+           left outer join observer o on (a.work_code = o.work_code)
+		   INNER JOIN PROJECT P ON  (A.PRJCT_NO = P.PRJCT_NO)
+		   WHERE   A.WORK_CODE = #{workCode} 
+		   AND (W.WORK_FILE_DEL_AT = '0' OR W.WORK_FILE_DEL_AT IS NULL) 
+	</select>
+	
+	
+	
+	
+	<insert id="insertWork" parameterType="kr.or.ddit.work.vo.WorkVO" >
+	<selectKey resultType="String" keyProperty="workCode" order="BEFORE" >
+	SELECT 'W'||#{prjctNo}||LPAD(count(*)+1, 10, '0' )||to_char( sysdate,'yyyyMMDDmiss') FROM work where 
+	PRJCT_NO =#{prjctNo}
+		 
+	</selectKey>	
+	INSERT INTO work (
+    PRJCT_NO,    CTGRY_CODE,    WORK_CODE,
+    WORK_SJ,    WORK_CN,    MEM_ID,
+    WORK_BGNDE,    WORK_ENDDE,    WORK_RGSDE,
+    WORK_REQ_STTUS_CODE,   WORK_RETURN_WHY,    
+    WORK_STTUS_CODE,    WORK_PRIORT_CODE,
+    WORK_PRGS_DGREE_POINT,    WORK_OTHBC_AT
+    
+   <if test="upperWorkCode != null and @org.apache.commons.lang3.StringUtils@isNotBlank(upperWorkCode)"> 
+   , UPPER_WORK_CODE 
+    </if>
+) VALUES (
+    #{prjctNo,jdbcType=NUMERIC},
+	#{ctgryCode,jdbcType=VARCHAR},
+	#{workCode,jdbcType=VARCHAR},
+	#{workSj,jdbcType=VARCHAR},
+	#{workCn,jdbcType=CLOB},
+	#{memId,jdbcType=VARCHAR},
+	#{workBgnde,jdbcType=DATE},
+	#{workEndde,jdbcType=DATE},
+	sysdate,
+	#{workReqSttusCode,jdbcType=VARCHAR},
+	#{workReturnWhy,jdbcType=VARCHAR},
+	#{workSttusCode,jdbcType=VARCHAR},
+	#{workPriortCode,jdbcType=VARCHAR},
+	#{workPrgsDgreePoint,jdbcType=NUMERIC},
+	#{workOthbcAt,jdbcType=CHAR} 
+	 <if test="upperWorkCode != null and @org.apache.commons.lang3.StringUtils@isNotBlank(upperWorkCode)"> 
+	, #{upperWorkCode,jdbcType=VARCHAR}
+	 </if>
+)
+	</insert>
+<!-- 	<resultMap type="kr.or.ddit.work.vo.WorkVO" id="WorkDetails" autoMapping="true">
+		<id property="workCode" column="WORK_CODE"/>
+		<collection property="workFileList" ofType="kr.or.ddit.work.vo.WorkFileVO" autoMapping="true">
+			<id property="workFileCode" column="work_file_code" />
+		</collection>
+	</resultMap> -->
+	<resultMap type="kr.or.ddit.work.vo.WorkVO" id="workParent" autoMapping="true">
+		<id property="workCode" column="WORK_CODE"/>
+		<collection property="parentList" ofType="kr.or.ddit.work.vo.WorkParentVO" autoMapping="true">
+			<id property="path" column="PATH"/>
+		</collection>
+	</resultMap>
+<select id="selectUpperWork"  resultMap="workParent" parameterType="kr.or.ddit.work.vo.WorkVO">
+		<![CDATA[ 
+	SELECT A.* FROM 
+			(
+				SELECT
+				         WORK_CODE , 
+						 LPAD(' &nbsp;', 6*5*(LEVEL-1), '&nbsp;' ) ||WORK_SJ  WORK_SJ 
+				         , SYS_CONNECT_BY_PATH(WORK_CODE, '!') PATH
+				         ,   SYS_CONNECT_BY_PATH(WORK_SJ, '!') ROOTS
+					FROM WORK
+					START WITH UPPER_WORK_CODE IS NULL 
+			
+			               CONNECT BY PRIOR WORK_CODE = UPPER_WORK_CODE  AND PRIOR PRJCT_NO = PRJCT_NO  
+			      ) A
+			       where  INSTR(PATH,  #{workCode} ) >0
+				
+	 ]]>   
+	</select>
+	
+	 
+	 <update id="updateDegree"  parameterType="kr.or.ddit.work.vo.WorkVO">
+	<!-- 진척도만 수정할 때 -->
+	 UPDATE WORK
+	    SET
+	        WORK_PRGS_DGREE_POINT = #{workPrgsDgreePoint},
+	        WORK_UPDTDE =sysdate      
+		WHERE
+	    PRJCT_NO = #{prjctNo}
+	    AND   WORK_CODE = #{workCode}
+	 
+	 </update>
+	 
+	 
+	<select id="checkWork" resultType="kr.or.ddit.work.vo.WorkVO" parameterType="String" >
+		<!-- 이 일감 번호에 따른 정보를 받아서 글쓴이 정보를 확인할 때 쓸 예정 -->
+		SELECT * FROM WORK WHERE WORK_CODE = #{workCode}
+	</select>
+	
+	<update id="updateWork" parameterType="kr.or.ddit.work.vo.WorkVO">
+	<!-- 사용자가 update 하는 것 -->
+	UPDATE WORK
+ 		SET 
+		        WORK_SJ =#{workSj}
+		    ,   WORK_CN =#{workCn}
+		    <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(workBgnde)">
+		    ,   WORK_BGNDE =#{workBgnde}
+		    </if>
+		    <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(workEndde)">
+		    ,   WORK_ENDDE =#{workEndde}
+		    </if>
+		    ,   WORK_STTUS_CODE =#{workSttusCode}
+		    ,   WORK_PRIORT_CODE =#{workPriortCode}
+		    ,   WORK_PRGS_DGREE_POINT =#{workPrgsDgreePoint}
+		    ,   WORK_OTHBC_AT =#{workOthbcAt}
+		    ,   WORK_UPDTDE =sysdate
+		    <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(upperWorkCode)">
+		    ,   UPPER_WORK_CODE =#{upperWorkCode}
+		    </if>
+		 
+		 WHERE  WORK_CODE = #{workCode}
+	</update>
+	
+	
+	 
+
+	
+	<select id="selectProjectPM" parameterType="kr.or.ddit.work.vo.WorkVO"  resultType="kr.or.ddit.work.vo.WorkAuthVO">
+	<!-- 해당 프로젝트의 PM을 체크하는 구문 승인 요청 메일 보내기 위해 -->
+	SELECT
+		    A.MEM_ID,
+		    AUTHOR,
+		    PRJCT_NO ,
+		    MEM_EMAIL
+	FROM
+    PROJECT_MEM A  INNER JOIN MEM B ON (A.MEM_ID =B.MEM_ID)
+    WHERE PRJCT_NO = #{prjctNo} 
+    AND AUTHOR = 'ROLE_PM'
+	</select>
+	
+	<select id="selectWorkObserver" parameterType="kr.or.ddit.work.vo.WorkVO" resultType="kr.or.ddit.work.vo.ObserverVO">
+	SELECT
+		    PRJCT_NO,
+		    B.MEM_ID,
+		    WORK_CODE,
+		    CTGRY_CODE,
+		    MEM_FNM , 
+		    MEM_LNM
+	FROM
+		    OBSERVER A INNER JOIN MEM B ON (A.MEM_ID = B.MEM_ID)
+		    WHERE  WORK_CODE = #{workCode}
+	
+	</select>
+	
+	<update id="updateWorkReqStatus" parameterType="kr.or.ddit.work.vo.WorkVO">
+	
+	 UPDATE WORK
+   		 SET
+		        WORK_REQ_STTUS_CODE =#{workReqSttusCode},
+		        WORK_PRGS_DGREE_POINT =100, 
+		        WORK_RETURN_WHY =''
+		 WHERE WORK_CODE =  #{workCode}
+	</update>
+	
+	
+	<select id="selectAllProjectMem" resultType="kr.or.ddit.work.vo.ObserverVO" parameterType="kr.or.ddit.work.vo.WorkVO">
+	   SELECT
+		     A.MEM_ID,
+		     AUTHOR,
+		     PRJCT_NO,
+		     CREATEDE,
+		     MEM_FNM,
+		     MEM_LNM,
+             MAKENAMEFORMAT(b.MEM_FNM, b.MEM_LNM, b.MEM_ID ) memName 
+FROM
+    PROJECT_MEM A INNER JOIN MEM B ON(A.MEM_ID = B.MEM_ID)
+    WHERE PRJCT_NO = #{prjctNo}
+	
+	</select>
+	
+	
+	<insert id="insertAllObserver" parameterType="java.util.List" >
+		INSERT ALL
+		<foreach collection="observerList" item="observer"> 
+		 INTO OBSERVER (
+			    PRJCT_NO,
+			    MEM_ID,
+			    WORK_CODE,
+			    CTGRY_CODE
+		) VALUES (
+			#{observer.prjctNo,jdbcType=NUMERIC},
+			#{observer.memId,jdbcType=VARCHAR},
+			#{observer.workCode,jdbcType=VARCHAR},
+			#{observer.ctgryCode,jdbcType=VARCHAR}
+		)
+		</foreach>
+		SELECT * FROM DUAL
+		
+	</insert>
+	
+	
+	<delete id="deleteWorkInfo" parameterType="String">
+	<!-- 게시글 삭제 -->
+	    MERGE INTO WORK C 
+         USING (
+            SELECT WORK_CODE, (SELECT COUNT(*) 
+            FROM WORK A
+            WHERE A.UPPER_WORK_CODE = B.WORK_CODE ) CNT
+			FROM WORK B
+            WHERE WORK_CODE =#{workCode}
+         ) D ON (D.WORK_CODE =  #{workCode} AND C.WORK_CODE = D.WORK_CODE)   
+         WHEN MATCHED THEN 
+         UPDATE SET
+	         WORK_SJ = '삭제된 일감',
+	         WORK_CN = '삭제된 일감입니다' ,
+	         WORK_PRGS_DGREE_POINT = 0,
+	         WORK_RETURN_WHY = NULL,
+	         WORK_DELETE_AT ='1'
+         DELETE WHERE D.CNT = 0
+	</delete>
+	
+	<delete id="deleteAllObserver" parameterType="kr.or.ddit.work.vo.WorkVO">
+	 	DELETE FROM observer
+	 	WHERE
+	 	WORK_CODE = #{workCode}  
+	 </delete>
+	 
+	
+	<select id="selectAllPeqList" parameterType="kr.or.ddit.member.vo.PagingVO" resultType="kr.or.ddit.work.vo.WorkVO">
+	 SELECT d.*
+		FROM(
+ 			SELECT ROWNUM RNUM, c.*
+					FROM (
+						  SELECT
+						   	A.PRJCT_NO,    A.CTGRY_CODE,    B.CTGRY_NM, h.mem_email ,
+                            WORK_SJ,     WORK_CN, MAKENAMEFORMAT(h.MEM_FNM, h.MEM_LNM, h.MEM_ID ) MEM_NAME   ,  h.MEM_ID ,WORK_CODE,
+						    MAKEDATEFORMAT(WORK_BGNDE)  WORK_BGNDE,    MAKEDATEFORMAT(WORK_ENDDE) WORK_ENDDE, MAKEDATEFORMAT(WORK_RGSDE)  WORK_RGSDE,
+						    WORK_REQ_STTUS_CODE,    WORK_RETURN_WHY,    UPPER_WORK_CODE,
+						    WORK_STTUS_CODE, (SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CODE_NO=WORK_PRIORT_CODE ) PRIORT_NM , 
+						    WORK_PRIORT_CODE ,  (SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CODE_NO=WORK_STTUS_CODE ) WORK_STATUS,  
+						    WORK_PRGS_DGREE_POINT,
+						    WORK_OTHBC_AT,    MAKEDATEFORMAT(WORK_UPDTDE) WORK_UPDTDE ,
+						      CASE   when TO_CHAR(sysdate,'yyyy-mm-dd') &gt;  TO_CHAR(A.WORK_ENDDE,'yyyy-mm-dd') then 'PASSED' 
+                         when (TO_CHAR(sysdate,'yyyy-mm-dd') &lt;  TO_CHAR(A.WORK_ENDDE,'yyyy-mm-dd')) and (TRUNC( to_date(A.WORK_ENDDE) -sysdate  ) &lt;=7)  then  'SOON'   
+                         when (TO_CHAR(sysdate,'yyyy-mm-dd') &lt;  TO_CHAR(A.WORK_ENDDE,'yyyy-mm-dd')) and (TRUNC( to_date(A.WORK_ENDDE) -sysdate  ) &lt;=14)  then  '2WEEK'   
+                         else 'NOT'
+                    end 
+                    AS WORK_DATE_STATUS
+   			
+						    
+						FROM
+						    WORK A LEFT OUTER JOIN WORK_CATEGORY B ON(A.CTGRY_CODE = B.CTGRY_CODE)  
+						    RIGHT OUTER JOIN MEM H ON (A.MEM_ID = H.MEM_ID)
+						    WHERE  A.PRJCT_NO =  #{workVO.prjctNo} 
+	 						AND WORK_REQ_STTUS_CODE=#{simpleSearch.workReqSttusCode}
+                            <include refid="pmWorkSearch"></include>
+		                    <if test="simpleSearch != null">
+		                    <if test="@org.apache.commons.lang3.StringUtils@isBlank(simpleSearch.sidx) and (simpleSearch.sidx) ==''">
+						   			 ORDER  BY WORK_RGSDE DESC
+						    </if>
+						    <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.sidx) and (simpleSearch.sidx) !=''">
+										ORDER  BY 
+										<choose>
+											<when test="simpleSearch.sidx eq 'MEM_ID'"> MEM_ID </when>
+											<when test="simpleSearch.sidx eq 'WORK_PRIORT_CODE'"> WORK_PRIORT_CODE </when>
+											<when test="simpleSearch.sidx eq 'WORK_ENDDE'"> WORK_ENDDE </when>
+											<when test="simpleSearch.sidx eq 'WORK_SJ'"> WORK_SJ </when>
+										</choose>
+										<choose>
+											<when test="simpleSearch.sortType eq 'desc'"> DESC </when>
+											<otherwise> ASC </otherwise>
+										</choose>
+									</if>
+						    </if>
+                            ) C
+				)D
+		WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+	
+	<select id="selectAllPeqTotal" parameterType="kr.or.ddit.member.vo.PagingVO" resultType="int">
+	select COUNT(*)
+		 FROM  
+	WORK A LEFT OUTER JOIN WORK_CATEGORY B ON(A.CTGRY_CODE = B.CTGRY_CODE)  
+		   RIGHT OUTER JOIN MEM H ON (A.MEM_ID = H.MEM_ID)
+	 where  A.PRJCT_NO =  #{workVO.prjctNo} 
+	 AND WORK_REQ_STTUS_CODE=#{simpleSearch.workReqSttusCode}
+	 <include refid="pmWorkSearch"></include>
+	 	
+	</select>
+	
+	<sql id="pmWorkSearch">
+			<if test="simpleSearch != null">
+					<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.startDate) and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.endDate)">
+					<![CDATA[
+						AND  (  
+						work_bgnde BETWEEN TO_DATE(#{simpleSearch.startDate}, 'YYYY-MM-DD') AND TO_DATE(#{simpleSearch.endDate}, 'YYYY-MM-DD')
+								)
+						]]>
+						<!-- 
+						OR WORK_ENDDE BETWEEN TO_DATE(#{simpleSearch.startDate}, 'YYYY-MM-DD')  AND TO_DATE(#{simpleSearch.endDate}, 'YYYY-MM-DD')
+						 OR (work_bgnde <= TO_DATE(#{simpleSearch.startDate}, 'YYYY-MM-DD') AND WORK_ENDDE >= TO_DATE(#{simpleSearch.endDate}, 'YYYY-MM-DD'))
+				 -->
+						
+					</if>
+					<if test="simpleSearch!=null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.searchWord)">
+			        AND INSTR(WORK_SJ, #{simpleSearch.searchWord}) > 0
+					</if>
+					<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.memId)">
+			        AND H.MEM_ID = #{simpleSearch.memId}
+					</if>
+					<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.ctgryCode)">
+					AND A.CTGRY_CODE =#{simpleSearch.ctgryCode}
+					</if>
+					<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.workPriortCode)">
+					AND A.WORK_PRIORT_CODE =#{simpleSearch.workPriortCode}
+					</if>
+		    </if>
+	</sql>
+	
+	<select id="selectWorkCountBySttus" parameterType="kr.or.ddit.work.vo.WorkVO" resultType="int" >
+		select count(*) from work  where  PRJCT_NO =  #{prjctNo}  and WORK_REQ_STTUS_CODE = #{workReqSttusCode}
+                          <!--   (select count(*) from work f where  f.PRJCT_NO =  #{detailSearch.prjctNo}  and WORK_REQ_STTUS_CODE = 'W00302') accept_Count,
+                            (select count(*) from work f where  f.PRJCT_NO =  #{detailSearch.prjctNo}  and WORK_REQ_STTUS_CODE = 'W00303') reject_Count -->
+	</select>
+	
+	
+	<update id="updateReqStatus" parameterType="kr.or.ddit.work.vo.WorkVO">
+	       UPDATE WORK
+    	   SET
+           WORK_REQ_STTUS_CODE =#{workReqSttusCode},
+           WORK_PRGS_DGREE_POINT = 100 
+         <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(workReturnWhy)">
+       	  ,  WORK_RETURN_WHY =#{workReturnWhy}
+         </if>
+         <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(workSttusCode)">
+       	  ,  WORK_STTUS_CODE = #{workSttusCode}
+         </if>
+			WHERE WORK_CODE =#{workCode}	
+	</update>
+	
+	<update id="updateAllAccept" parameterType="kr.or.ddit.work.vo.WorkVO">
+ 	UPDATE WORK
+    	   SET
+           WORK_REQ_STTUS_CODE =#{workReqSttusCode}
+	  		,  WORK_STTUS_CODE = #{workSttusCode}
+	  		, WORK_PRGS_DGREE_POINT =100
+		WHERE  WORK_CODE  IN 
+		<foreach collection="workCodes" item="workCode" index="i" separator="," open="(" close=")">
+		  #{workCode}
+		</foreach>
+	</update>
+	
+	<select id="selectWorkManInfo" resultType="kr.or.ddit.work.vo.WorkAuthVO" parameterType="String" >
+	<!-- 일감 담당자의 정보 얻기 이걸로 메일 보내기 -->
+	SELECT
+        WORK_SJ,   MAKENAMEFORMAT(h.MEM_FNM, h.MEM_LNM, h.MEM_ID ) memName,  h.MEM_ID ,
+		h.mem_email 
+		FROM
+		WORK A LEFT OUTER JOIN WORK_CATEGORY B ON(A.CTGRY_CODE = B.CTGRY_CODE)  
+		RIGHT OUTER JOIN MEM H ON (A.MEM_ID = H.MEM_ID)
+        WHERE A.WORK_CODE =#{workCode}				    
+	
+	</select>
+	
+	
+</mapper>

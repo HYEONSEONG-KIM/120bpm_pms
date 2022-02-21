@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.free.dao.FreeBoardDAO">
+
+	<sql id="search">
+		<where>
+			<if
+				test="simpleSearch!=null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.searchWord)">
+				<choose>
+					<when test="simpleSearch.searchType eq 'boSj'">
+						INSTR(BO_SJ, #{simpleSearch.searchWord} ) > 0
+					</when>
+					<when test="simpleSearch.searchType eq 'boCn'">
+						INSTR(BO_CN, #{simpleSearch.searchWord}) > 0
+					</when>
+					<when test="simpleSearch.searchType eq 'memId'">
+						INSTR(MEM_ID, #{simpleSearch.searchWord}) > 0
+					</when>
+
+					<otherwise>
+						INSTR(BO_SJ, #{simpleSearch.searchWord}) > 0
+						OR INSTR(BO_CN, #{simpleSearch.searchWord}) > 0
+						OR INSTR(MEM_ID, #{simpleSearch.searchWord}) > 0
+					</otherwise>
+				</choose>
+			</if>
+		</where>
+	</sql>
+	
+	
+	
+	<select id="selectTotalRecoard"
+		parameterType="kr.or.ddit.free.vo.FreePagingVO" resultType="int">
+		SELECT COUNT(*)
+		FROM BOARD WHERE
+		PRJCT_NO = #{freeInfo.prjctNo, jdbcType=NUMERIC}
+		AND MENU_CL_CODE = 'FR'
+		<include refid="search"></include>
+	</select>
+
+	<select id="selectBoardList"
+		parameterType="kr.or.ddit.free.vo.FreePagingVO"
+		resultType="kr.or.ddit.free.vo.FreeBoardVO">
+		SELECT B.*
+		FROM(
+		SELECT A.* ,ROWNUM RNUM, (SELECT COUNT(BO_RGSDE) FROM BOARD WHERE BO_RGSDE = TO_CHAR(SYSDATE, 'YYYY-MM-DD')) TODAY
+		FROM (
+		SELECT
+		A.PRJCT_NO, A.BO_NO, A.BO_SJ,
+		MAKEDATEFORMAT(A.BO_RGSDE) BO_RGSDE,
+		A.BO_RDCNT,
+		MAKENAMEFORMAT(MEM_FNM, MEM_LNM, A.MEM_ID) MEM_NAME
+		FROM BOARD A
+		RIGHT OUTER JOIN MEM H ON (A.MEM_ID = H.MEM_ID)
+		WHERE A.PRJCT_NO = #{freeInfo.prjctNo, jdbcType=NUMERIC} AND
+		A.MENU_CL_CODE = 'FR'
+		
+		) A
+		) B
+		WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+		ORDER BY RNUM DESC
+	</select>
+
+
+
+
+	<insert id="insertBoard" parameterType="kr.or.ddit.free.vo.FreeBoardVO">
+		<selectKey order="BEFORE" keyProperty="boNo" resultType="int">
+		SELECT BOARD_NO_SEQ.NEXTVAL FROM DUAL
+		</selectKey>
+		<!-- 게시글 추가 -->
+		INSERT INTO
+		BOARD(PRJCT_NO,MENU_CL_CODE,BO_NO,BO_SJ,BO_CN,MEM_ID,BO_RGSDE,LIKE_CNT,OTHBC_AT)
+		VALUES
+		(#{prjctNo,jdbcType=NUMERIC},
+		'FR',
+		#{boNo,jdbcType=NUMERIC},
+		#{boSj,jdbcType=VARCHAR},
+		#{boCn,jdbcType=CLOB},
+		#{memId,jdbcType=VARCHAR},
+		to_char(SYSDATE,'YYYY-MM-DD'),
+		0,
+		0)
+
+	</insert>
+
+<update id="updateBoard" parameterType="kr.or.ddit.free.vo.FreeBoardVO">
+  UPDATE BOARD
+    SET
+    BO_SJ = #{boSj,jdbcType=VARCHAR}, 
+    BO_CN = #{boCn,jdbcType=CLOB},
+    BO_UPDTDE = to_char(SYSDATE,'YYYY-MM-DD')
+WHERE
+    BO_NO = #{boNo,jdbcType=NUMERIC}
+	</update>
+
+
+<resultMap type="kr.or.ddit.free.vo.FreeBoardVO" id="freeBoardMap" autoMapping="true">
+	<id property="boNo" column="BO_NO" />
+</resultMap>
+<select id="selectFreeboard" parameterType="int" resultMap="freeBoardMap" >
+<!-- 게시글 상세조회 -->
+SELECT
+    PRJCT_NO,MENU_CL_CODE,BO_RDCNT, BO_NO,BO_SJ,BO_CN,MEM_ID,PARENT_BO_NO,TO_CHAR(BO_RGSDE, 'YYYY-MM-DD') BO_RGSDE,BO_PARENT,BO_RDCNT,OTHBC_AT,BO_DELETE_AT
+FROM BOARD
+    WHERE BO_NO = #{boNo}
+</select>
+
+
+<update id="incrementHit" parameterType="int">
+	UPDATE BOARD
+	SET BO_RDCNT = BO_RDCNT + 1
+	WHERE BO_NO = #{boNo}
+</update>
+
+
+
+
+<select id="selectFreeboardDetailView" parameterType="kr.or.ddit.free.vo.FreeBoardVO" resultMap="freeBoardMap" >
+SELECT
+    PRJCT_NO,MENU_CL_CODE, BO_NO,BO_SJ,BO_CN,MEM_ID,PARENT_BO_NO,TO_CHAR(BO_RGSDE, 'YYYY-MM-DD') BO_RGSDE,BO_RDCNT,BO_PARENT,OTHBC_AT,BO_DELETE_AT
+FROM BOARD
+	WHERE BO_NO = #{boNo}
+</select>
+
+
+<delete id="deleteBoard" parameterType="int">
+	<!-- 게시글 삭제 -->
+	DELETE
+		FROM BOARD
+	WHERE BO_NO = #{boNo}
+</delete>
+
+
+
+
+
+
+
+</mapper>

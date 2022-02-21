@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.calendar.dao.CalendarDAO">
+	<select id="selectPrjctWorkList" parameterType="int" resultType="kr.or.ddit.mypage.vo.MyWorkVO">
+		SELECT W.CTGRY_CODE, C.CTGRY_NM, WORK_CODE, WORK_SJ,  
+			MEM_ID,
+			MAKENAMEFORMAT((SELECT MEM_FNM FROM MEM M WHERE M.MEM_ID = W.MEM_ID),(SELECT MEM_LNM FROM MEM M WHERE M.MEM_ID = W.MEM_ID),MEM_ID) MEM_NAME,   
+			TO_CHAR(WORK_BGNDE, 'YYYY-MM-DD') WORK_BGNDE, 
+			TO_CHAR(WORK_ENDDE, 'YYYY-MM-DD') WORK_ENDDE ,
+			UPPER_WORK_CODE,(SELECT K.WORK_SJ FROM WORK K WHERE K.WORK_CODE = W.UPPER_WORK_CODE) UPPER_SJ,
+            WORK_STTUS_CODE,(SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CODE_NO = W.WORK_STTUS_CODE) STTUS_NM,
+            WORK_PRIORT_CODE, (SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CODE_NO = W.WORK_PRIORT_CODE) PRIORT_NM,
+			WORK_PRGS_DGREE_POINT 
+            FROM WORK W INNER JOIN WORK_CATEGORY C ON(W.CTGRY_CODE = C.CTGRY_CODE)
+					INNER JOIN PROJECT P ON(W.PRJCT_NO = P.PRJCT_NO)
+            WHERE P.PRJCT_NO = #{prjctNo}
+	</select>
+</mapper>

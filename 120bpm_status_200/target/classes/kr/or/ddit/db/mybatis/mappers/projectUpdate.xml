@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.projectSetting.dao.ProjectUpdateDAO">
+	<select id="selectProject" parameterType="int" resultType="kr.or.ddit.makeProject.vo.MakeProjectVO">
+		SELECT
+			prjct_no, prjct_nm, sumry,
+			to_char(prjct_beginde,'yyyy-mm-dd') prjct_beginde, 
+			to_char(prjct_endde,'yyyy-mm-dd') prjct_endde , 
+			upper_prjct_no,
+			prjct_rgsde, prjct_ornt, bsnssclae, delet_state
+		FROM
+			project
+		WHERE PRJCT_NO = #{prtId}
+	</select>
+	
+	<update id="updateBasicInfo" parameterType="kr.or.ddit.makeProject.vo.MakeProjectVO">
+		UPDATE PROJECT
+		SET
+			PRJCT_NM = #{prjctNm,jdbcType=VARCHAR},
+			SUMRY = #{sumry,jdbcType=VARCHAR},
+			PRJCT_BEGINDE = #{prjctBeginde,jdbcType=DATE},
+			PRJCT_ENDDE = #{prjctEndde,jdbcType=DATE},
+			UPPER_PRJCT_NO = #{upperPrjctNo,jdbcType=NUMERIC},
+			PRJCT_RGSDE = SYSDATE,
+			PRJCT_ORNT = #{prjctOrnt,jdbcType=VARCHAR},
+			BSNSSCLAE = #{bsnssclae,jdbcType=VARCHAR}
+		WHERE PRJCT_NO = #{prjctNo}
+	</update>
+	
+	<select id="selectAllRole" resultType="kr.or.ddit.security.vo.AuthorityVO">
+		SELECT
+			AUTHOR, AUTHOR_NM, AUTHOR_DC,
+			AUTHOR_CREATDE, AUTHOR_UPDTDE
+		FROM
+			ROLE
+		WHERE AUTHOR LIKE 'ROLE_%' AND AUTHOR != 'ROLE_ADMIN'
+	</select>
+	
+	<select id="projectMemList" parameterType="int" resultType="kr.or.ddit.accept.vo.ProjectMemVO">
+		SELECT
+			A.MEM_ID, A.AUTHOR, PRJCT_NO, MAKEDATEFORMAT(CREATEDE) CREATEDE, B.AUTHOR_DC, B.AUTHOR_NM, MAKENAMEFORMAT(C.MEM_FNM,
+			C.MEM_LNM, C.MEM_ID) MEM_NAME
+		FROM
+			PROJECT_MEM A LEFT OUTER JOIN ROLE B ON (A.AUTHOR = B.AUTHOR)
+			INNER JOIN MEM C ON (A.MEM_ID = C.MEM_ID)
+		WHERE PRJCT_NO = #{PRTID}
+		ORDER BY B.SEQUENCE
+	</select>
+	
+	<select id="memList" parameterType="int" resultType="kr.or.ddit.accept.vo.AcceptMemberVO">
+		SELECT
+			MEM_ID, MEM_HP, MEM_EMAIL,
+			MEM_ZIP, MEM_ADDR1, MEM_ADDR2,
+			MEM_FNM, MEM_JOIN_CONFM_AT, MEM_STTUS_CL_CODE,
+			MEM_JOIN_DE, MEM_JOIN_CONFM_DE, MNGR_AT,
+		PSITN_CL_CODE, PASS_ERROR_CNT, INDVDLINFO_AGRE_DE,
+			MEM_LAST_LOGIN_DE, PROFL_IMG_NM, MEM_LNM,
+			MAKENAMEFORMAT(MEM_FNM, MEM_LNM, MEM_ID) MEM_NAME
+		FROM
+			MEM
+		WHERE MEM_ID NOT IN (
+		SELECT MEM_ID FROM PROJECT_MEM WHERE prjct_no = #{prtId}
+		)
+	</select>
+	
+	<insert id="addProjectMem" parameterType="kr.or.ddit.accept.vo.ProjectMemVO">
+			INSERT INTO project_mem (
+				MEM_ID,
+				AUTHOR,
+				PRJCT_NO,
+				CREATEDE
+			) VALUES (
+				#{memId,jdbcType=VARCHAR},
+				#{author,jdbcType=VARCHAR},
+				#{prjctNo,jdbcType=NUMERIC},
+				SYSDATE
+			)
+	</insert>
+	
+	<delete id="deletePrtMem" parameterType="kr.or.ddit.accept.vo.ProjectMemVO">
+		DELETE FROM project_mem
+		WHERE
+		mem_id = #{memId}
+		AND prjct_no =#{prjctNo}
+	</delete>
+	
+	<select id="prtMemDetail" parameterType="kr.or.ddit.accept.vo.ProjectMemVO" resultType="kr.or.ddit.accept.vo.ProjectMemVO">
+		SELECT
+			A.mem_id, A.author, prjct_no, 
+			MAKEDATEFORMAT(createde) createde,
+			MAKENAMEFORMAT(MEM_FNM, MEM_LNM, B.MEM_ID) MEM_NAME,
+			B.MEM_EMAIL, C.AUTHOR_NM, C.AUTHOR_DC, B.PROFL_IMG_NM
+		FROM
+			project_mem A LEFT OUTER JOIN MEM B ON (A.MEM_ID = B.MEM_ID)
+		LEFT OUTER JOIN ROLE C ON(A.AUTHOR = C.AUTHOR)
+		WHERE A.MEM_ID = #{memId} AND A.PRJCT_NO = ${prjctNo} 
+	</select>
+	
+	<select id="workList" parameterType="kr.or.ddit.accept.vo.ProjectMemVO" resultType="kr.or.ddit.work.vo.WorkVO">
+		SELECT
+			PRJCT_NO, CTGRY_CODE, WORK_CODE, WORK_SJ,
+			WORK_CN, MEM_ID, WORK_BGNDE, WORK_ENDDE,
+			WORK_RGSDE, WORK_REQ_STTUS_CODE, WORK_RETURN_WHY, UPPER_WORK_CODE,
+			WORK_STTUS_CODE, WORK_PRIORT_CODE, WORK_PRGS_DGREE_POINT,
+			WORK_OTHBC_AT, WORK_UPDTDE
+		FROM
+			WORK
+		WHERE MEM_ID = #{memId} AND PRJCT_NO = #{prjctNo}
+	</select>
+	
+	<select id="issueCnt" parameterType="kr.or.ddit.accept.vo.ProjectMemVO" resultType="int">
+		SELECT COUNT(*)
+		FROM ISSUE
+		WHERE MEM_ID = #{memId} AND PRJCT_NO = #{prjctNo}
+	</select>
+
+	<select id="boardList" parameterType="kr.or.ddit.accept.vo.ProjectMemVO" resultType="kr.or.ddit.wiki.vo.BoardVO">
+		SELECT
+			PRJCT_NO, MENU_CL_CODE, BO_NO,
+			BO_SJ, BO_CN, MEM_ID,
+			PARENT_BO_NO, BO_RGSDE, LIKE_CNT,
+			BO_PARENT, OTHBC_AT
+		FROM
+			BOARD
+		WHERE MEM_ID = #{memId} AND PRJCT_NO = #{prjctNo}
+	</select>
+	
+	<select id="categoryList" parameterType="int"  resultType="kr.or.ddit.projectSetting.vo.WorkCategoryVO">
+		SELECT
+			CTGRY_CODE, CTGRY_NM, PRJCT_NO,
+			(SELECT COUNT(*) FROM WORK B WHERE B.CTGRY_CODE = A.CTGRY_CODE) WORK_CNT
+		FROM WORK_CATEGORY A
+		WHERE PRJCT_NO = #{prtId}
+		ORDER BY CTGRY_NM
+	</select>
+	
+	<select id="projectWorkList" parameterType="int" resultType="kr.or.ddit.work.vo.WorkVO">
+		SELECT
+			PRJCT_NO, CTGRY_CODE, WORK_CODE, WORK_SJ,
+			WORK_CN, MEM_ID, WORK_BGNDE, WORK_ENDDE,
+			WORK_RGSDE, WORK_REQ_STTUS_CODE, WORK_RETURN_WHY, UPPER_WORK_CODE,
+			WORK_STTUS_CODE, WORK_PRIORT_CODE, WORK_PRGS_DGREE_POINT,
+			WORK_OTHBC_AT, WORK_UPDTDE
+		FROM
+			WORK
+		WHERE PRJCT_NO = #{prtId}
+	</select>
+	
+	<select id="duplNameCheck" parameterType="int" resultType="string">
+		SELECT ctgry_nm from work_category where prjct_no = #{prtId}
+	</select>
+	
+	<insert id="addCategory" parameterType="kr.or.ddit.projectSetting.vo.WorkCategoryVO">
+		<selectKey keyProperty="ctgryCode" order="BEFORE" resultType="string">
+			SELECT WORK_CATEGORY_SEQ.NEXTVAL FROM DUAL
+		</selectKey>
+	
+		INSERT INTO work_category (
+			ctgry_code,ctgry_nm,prjct_no
+		) VALUES (
+			#{ctgryCode,jdbcType=VARCHAR},
+			#{ctgryNm,jdbcType=VARCHAR},
+			#{prjctNo,jdbcType=NUMERIC}
+		)
+	</insert>
+	
+	<update id="updateCategory" parameterType="kr.or.ddit.projectSetting.vo.WorkCategoryVO">
+		UPDATE WORK_CATEGORY
+		SET ctgry_nm = #{ctgryNm,jdbcType=VARCHAR}
+		WHERE ctgry_code = #{ctgryCode}
+	</update>
+	
+	<update id="updateMemRole" parameterType="kr.or.ddit.accept.vo.ProjectMemVO">
+		UPDATE PROJECT_MEM
+		SET AUTHOR = #{author,jdbcType=VARCHAR}
+		WHERE MEM_ID = #{memId} AND PRJCT_NO = #{prjctNo}
+	</update>
+	
+	<select id="timeLineList" parameterType="int" resultType="kr.or.ddit.projectSetting.vo.TimeLineVO">
+			SELECT
+				TLINE_CODE, PRJCT_NO, MEM_ID,
+				TLINE_RGSDE, MENU_CL_CODE, CMD_CL_CODE
+			FROM
+				TIMELINE
+			WHERE PRJCT_NO = #{prtId}
+	</select>
+	
+	<select id="prtNm" parameterType="int" resultType="string">
+		SELECT
+			prjct_nm
+		FROM
+			project
+		WHERE PRJCT_NO = #{prtId}
+	</select>
+</mapper>

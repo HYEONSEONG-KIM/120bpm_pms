@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.settings.dao.SettingsDAO">
+	<insert id="insertSetupDetail"
+		parameterType="kr.or.ddit.settings.vo.SetupDetailVO">
+		INSERT ALL
+		<foreach collection="setupDetailList" item="setupDetail"
+			index="idx">
+			INTO SETUP_DETAIL
+			(
+			SETUP_CODE, SETUP_CN_NO, SETUP_CN, SETUP_VALUE, SETUP_DETAIL_NO
+			)
+			VALUES
+			(
+			#{setupCode, jdbcType=VARCHAR },
+			#{setupDetail.setupCnNo, jdbcType=INTEGER },
+			#{setupDetail.setupCn, jdbcType=VARCHAR },
+			#{setupDetail.setupValue, jdbcType=VARCHAR },
+			#{setupDetail.setupDetailNo, jdbcType=INTEGER }
+			)
+		</foreach> 
+		SELECT * FROM DUAL
+	</insert>
+
+	<delete id="deleteSetupDetail" parameterType="string">
+		DELETE FROM
+		SETUP_DETAIL
+		WHERE
+		SETUP_CODE = #{setupCode}
+	</delete>
+  
+	<update id="updateSetupDetail"
+		parameterType="kr.or.ddit.settings.vo.SetupDetailVO">
+		UPDATE SETUP_DETAIL
+		SET
+		SETUP_VALUE = #{setupValue, jdbcType=VARCHAR}
+		WHERE SETUP_CODE = #{setupCode, jdbcType=VARCHAR}
+		AND SETUP_CN_NO =#{setupCnNo, jdbcType=INTEGER}
+		AND SETUP_DETAIL_NO = #{setupDetailNo, jdbcType=INTEGER} 
+	</update>
+	
+	<select id="selectSetupValues" parameterType="string" resultType="kr.or.ddit.settings.vo.SetupDetailVO">
+		SELECT SETUP_CODE, SETUP_CN_NO, SETUP_VALUE, SETUP_DETAIL_NO
+		FROM SETUP_DETAIL 
+		WHERE SETUP_CODE = #{setupCode}
+	</select> 
+	
+	<select id="selectSetupDetailList" resultType="kr.or.ddit.settings.vo.SetupDetailVO">
+		SELECT SETUP_CODE, SETUP_CN_NO, SETUP_CN, SETUP_VALUE, SETUP_DETAIL_NO
+		FROM SETUP_DETAIL 
+	</select>
+</mapper>

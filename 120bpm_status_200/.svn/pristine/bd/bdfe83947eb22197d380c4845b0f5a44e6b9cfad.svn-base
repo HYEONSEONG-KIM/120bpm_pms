@@ -1,0 +1,62 @@
+@charset "UTF-8";
+label {
+	width: 150px;
+/* 	text-align: right; */
+	margin-right: 10px; 
+	font-weight: bold; 
+	font-size: 1.3em;
+}
+
+input[type=text], select {
+	height: 30px;
+	vertical-align: top;
+	font-size: 1.3em;
+	padding: 0 10px;
+}
+
+textarea {
+	font-size: 1.3em;
+}
+
+#inputDiv>div {
+	margin-bottom: 20px;
+}
+
+span {
+	font-size: 17px;
+}
+
+h6 {
+	font-size: medium;
+	display: inline-block;
+	padding: 5px 0;
+	color: gray;
+}
+
+.border {
+	border-color: black;
+	width: 50%;
+	height: auto;
+}
+
+p {
+	margin: 0 0 20px 20px;
+	font-size: 1.2em;
+}
+
+.checkall {
+	margin: 15px;
+}
+
+hr {
+	border-color: transparent;
+	clear: both;
+	margin: 0;
+}
+
+#settingForm {
+	visibility: hidden;
+}
+.outer{  
+	margin-left: 10%;	
+}

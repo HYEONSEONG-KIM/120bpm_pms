@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.projectReport.dao.ProjectReportDAO">
+	
+	<select id="category" parameterType="int" resultType="kr.or.ddit.projectSetting.vo.WorkCategoryVO">
+		SELECT
+			CTGRY_CODE,CTGRY_NM,PRJCT_NO
+		FROM
+			WORK_CATEGORY
+		WHERE PRJCT_NO = #{prtId}
+	</select>
+	
+	<select id="prtWork" parameterType="int" resultType="kr.or.ddit.work.vo.WorkVO">
+		SELECT
+    		PRJCT_NO, CTGRY_CODE, WORK_PRIORT_CODE, WORK_PRGS_DGREE_POINT
+		FROM WORK
+		WHERE PRJCT_NO = #{prtId}
+    
+	</select>
+
+</mapper>

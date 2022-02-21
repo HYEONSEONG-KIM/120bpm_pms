@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.main.dao.UserDAO">
+	<select id="selectMemInfo" parameterType="kr.or.ddit.main.vo.MyPrjctMemVO" resultType="kr.or.ddit.mypage.vo.MyMemVO">
+		<!-- 회원 정보 조회 -->
+		SELECT
+		    MAKENAMEFORMAT(MEM_FNM, MEM_LNM,M.MEM_ID) MEM_NAME , PSITN_CL_CODE,
+		    <choose>
+		    	<when test="memId eq userId">
+		     MEM_HP, MEM_EMAIL, 
+		    	</when>
+		    	<when test="mngrAt eq '1'">
+		     MEM_HP, MEM_EMAIL, 
+		    	</when> 
+		    	<otherwise>
+		    DECODE((SELECT SETUP_VALUE FROM MEM_SETUP WHERE SETUP_CODE='S00107' AND SETUP_CN_NO=3 AND MEM_ID=M.MEM_ID),0,MEM_HP,'-') MEM_HP,
+		    DECODE((SELECT SETUP_VALUE FROM MEM_SETUP WHERE SETUP_CODE='S00107' AND SETUP_CN_NO=2 AND MEM_ID=M.MEM_ID),0,MEM_EMAIL,'-') MEM_EMAIL, 
+		    	</otherwise>
+		    </choose>
+		    TO_CHAR(MEM_LAST_LOGIN_DE,(SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00102' AND SETUP_CN_NO = 1)) MEM_LAST_LOGIN_DE,
+		    PROFL_IMG_NM, SETUP_VALUE MEM_INTRO
+		FROM MEM M INNER JOIN MEM_SETUP S ON(M.MEM_ID=S.MEM_ID)
+		WHERE M.MEM_ID = #{userId}
+		AND S.SETUP_CODE = 'S00107'
+		AND S.SETUP_CN_NO = 1
+	</select>
+	
+	<select id="selectMemWorkCnt" parameterType="kr.or.ddit.main.vo.MyPrjctMemVO" resultType="kr.or.ddit.mypage.vo.MyWorkVO">
+		<!-- 회원 일감수 조회 -->
+		SELECT WORK_STTUS_CODE, COUNT(*) DAYWORKCNT
+		FROM WORK
+		WHERE PRJCT_NO = #{prjctNo}
+		AND MEM_ID = #{userId}
+		AND WORK_OTHBC_AT = '1'
+		AND WORK_DELETE_AT = '0'
+		GROUP BY WORK_STTUS_CODE
+	</select>
+	
+	<select id="selectMemPrjcts" parameterType="kr.or.ddit.main.vo.MyPrjctMemVO" resultType="kr.or.ddit.main.vo.MyProjectVO">
+		<!-- 로그인사용자와 회원이 함께 참여한 프로젝트 조회  -->
+		SELECT M.PRJCT_NO, PRJCT_NM
+		FROM PROJECT_MEM M INNER JOIN PROJECT P ON(M.PRJCT_NO = P.PRJCT_NO)
+		WHERE MEM_ID = #{memId}
+		INTERSECT 
+		SELECT M.PRJCT_NO, PRJCT_NM
+		FROM PROJECT_MEM M INNER JOIN PROJECT P ON(M.PRJCT_NO = P.PRJCT_NO)
+		WHERE MEM_ID = #{userId}
+	</select>
+
+	<select id="selectMemTimeline" parameterType="kr.or.ddit.main.vo.MyPrjctMemVO" resultType="kr.or.ddit.activity.vo.MyTimelineVO">
+		<!-- 회원의 최근 타임라인 조회 -->
+		SELECT *
+		FROM(SELECT TLINE_CODE, PRJCT_NO, T.MEM_ID, MAKENAMEFORMAT(MEM_FNM, MEM_LNM, T.MEM_ID) MEM_NAME,
+	       	   MAKEDATEFORMAT(TLINE_RGSDE) TLINE_RGSDE, MAKETIMEFORMAT(TLINE_RGSDE) TLINE_RGSDE_TIME,
+        	   T.CMD_CL_CODE, CODE_NM , T.MENU_CL_CODE, MENU_CL_NM, T.WORK_CODE , T.BO_NO , T.ISSUE_NO,
+				MAKEDATEFORMAT(SYSDATE- 10) STARTDE,
+      	 	   MAKEDATEFORMAT(SYSDATE) ENDDE,
+        	  (CASE T.MENU_CL_CODE WHEN 'WO'THEN (SELECT WORK_SJ FROM WORK W WHERE W.WORK_CODE = T.WORK_CODE)
+                             WHEN 'IS' THEN (SELECT ISSUE_SJ FROM ISSUE I WHERE I.ISSUE_NO = T.ISSUE_NO)
+                             ELSE (SELECT BO_SJ FROM BOARD I WHERE BO_NO = T.BO_NO) 
+                            END) SUBJECT 
+			FROM TIMELINE T  LEFT OUTER JOIN MEM M ON (T.MEM_ID = M.MEM_ID)
+		                LEFT OUTER JOIN CMMN_CODE_DETAIL C ON(T.CMD_CL_CODE = C.CODE_NO)
+		                INNER JOIN MENU_CL L ON(T.MENU_CL_CODE = L.MENU_CL_CODE)
+			WHERE T.PRJCT_NO = #{prjctNo}
+	        AND T.MEM_ID = #{userId}
+			AND T.CMD_CL_CODE != 'T00103' 
+	        AND T.TLINE_RGSDE BETWEEN (SYSDATE-10) AND SYSDATE
+	        ORDER BY T.TLINE_RGSDE DESC  
+        )B  
+		WHERE SUBJECT IS NOT NULL
+        
+	</select>
+</mapper>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.project.dao.ProjectDAO">
+
+<sql id="searchFrag">
+		<where>
+			<if test="simpleSearch!=null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleSearch.searchWord)">
+				<choose>
+					<when test ="simpleSearch.searchType eq 'nm'">
+						INSTR(PRJCT_NM, #{simpleSearch.searchWord}) > 0 
+					</when>
+					<when  test = "simpleSearch.searchType eq 'ornt'">
+					    INSTR(PRJCT_ORNT, #{simpleSearch.searchWord}) > 0
+					</when>
+								
+				<otherwise>
+				INSTR(PRJCT_NM, #{simpleSearch.searchWord}) > 0 
+				OR INSTR(PRJCT_BEGINDE, #{simpleSearch.searchWord}) > 0
+				OR INSTR(PRJCT_ENDDE, #{simpleSearch.searchWord}) > 0
+				OR INSTR(PRJCT_ORNT, #{simpleSearch.searchWord}) > 0
+				</otherwise>
+				</choose>
+			</if>
+		</where>
+	</sql>
+<select id="selectTotalRecord" parameterType="kr.or.ddit.project.vo.ProjectVO" resultType="int">
+		SELECT COUNT(*)
+		FROM PROJECT
+		
+</select>
+
+<select id="selectProjectList" parameterType="kr.or.ddit.member.vo.PagingVO" resultType="kr.or.ddit.project.vo.ProjectVO">
+
+SELECT PRJCT_NO,  PRJCT_NM,  PRJCT_BEGINDE, PRJCT_ENDDE, PRJCT_RGSDE ,PRJCT_ORNT from PROJECT
+
+</select>
+
+</mapper>

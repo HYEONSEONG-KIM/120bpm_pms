@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mypage.dao.MyAccountDAO">
+	<resultMap type="kr.or.ddit.mypage.vo.MyMemVO" id="memMap" autoMapping="true">
+		<id property="memId" column="MEM_ID"/>
+		<collection property="myCareerList" javaType="java.util.List" ofType="kr.or.ddit.mypage.vo.MyCareerVO" autoMapping="true">
+			<id property="careerMatterNo" column="CAREER_MATTER_NO"/> 
+		</collection>
+	</resultMap>
+	<select id="selectMyAccountInfo" parameterType="string" resultMap="memMap">
+		SELECT
+			M.MEM_ID, MEM_PASS, MEM_HP, MEM_EMAIL, MEM_ZIP, MEM_ADDR1, MEM_ADDR2,
+			MEM_FNM, MEM_LNM, MEM_JOIN_CONFM_AT, MEM_STTUS_CL_CODE,
+			TO_CHAR(MEM_JOIN_DE,(SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00102' AND SETUP_CN_NO = 1)) MEM_JOIN_DE,
+			TO_CHAR(MEM_JOIN_CONFM_DE,(SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00102' AND SETUP_CN_NO = 1)) MEM_JOIN_CONFM_DE,
+			MNGR_AT, PSITN_CL_CODE, PASS_ERROR_CNT,
+			TO_CHAR(INDVDLINFO_AGRE_DE,(SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00102' AND SETUP_CN_NO = 1)) INDVDLINFO_AGRE_DE,
+			TO_CHAR(MEM_LAST_LOGIN_DE,(SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00102' AND SETUP_CN_NO = 1)) MEM_LAST_LOGIN_DE,
+			PROFL_IMG_NM,
+			CAREER_MATTER_NO, PARTCPTN_BIZ,
+			TO_CHAR(BEGINDE,(SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00102' AND SETUP_CN_NO = 1)) BEGINDE, 
+			TO_CHAR(ENDDE,(SELECT SETUP_VALUE FROM SETUP_DETAIL WHERE SETUP_CODE = 'S00102' AND SETUP_CN_NO = 1)) ENDDE,
+			ORNT_NM, WRKPLC_NM, OFCPS_NM, ATNDDU
+		FROM MEM M LEFT OUTER JOIN CAREER_MATTER C ON(M.MEM_ID = C.MEM_ID)
+		WHERE M.MEM_ID = #{memId}
+		ORDER BY BEGINDE
+	</select>
+	
+	<select id="selectMyCareer" parameterType="string" resultType="kr.or.ddit.mypage.vo.MyCareerVO">
+		SELECT 
+			CAREER_MATTER_NO, PARTCPTN_BIZ,
+			TO_CHAR(BEGINDE,'yyyy-mm-dd') BEGINDE, 
+			TO_CHAR(ENDDE,'yyyy-mm-dd') ENDDE, 
+			ORNT_NM, WRKPLC_NM, OFCPS_NM, ATNDDU, MEM_ID 
+			FROM CAREER_MATTER
+		WHERE MEM_ID = #{memId}
+		ORDER BY BEGINDE
+	</select>
+	
+	<update id="updateMyAccountInfo" parameterType="kr.or.ddit.mypage.vo.MyMemVO">
+		UPDATE MEM 
+		SET 
+			MEM_HP= #{memHp, jdbcType=VARCHAR },
+			MEM_EMAIL= #{memEmail, jdbcType=VARCHAR },
+			MEM_ZIP= #{memZip, jdbcType=VARCHAR },
+			MEM_ADDR1= #{memAddr1, jdbcType=VARCHAR },
+			MEM_ADDR2= #{memAddr2, jdbcType=VARCHAR },
+			MEM_FNM= #{memFnm, jdbcType=VARCHAR }, 
+			MEM_LNM= #{memLnm, jdbcType=VARCHAR } 
+		WHERE MEM_ID= #{memId, jdbcType=VARCHAR } 
+	</update> 
+	
+	<update id="updateCareer" parameterType="kr.or.ddit.mypage.vo.MyCareerVO">
+		UPDATE CAREER_MATTER
+		SET 
+			PARTCPTN_BIZ = #{partcptnBiz, jdbcType=VARCHAR},
+			BEGINDE = #{beginde, jdbcType=DATE},
+			ENDDE = #{endde, jdbcType=DATE},
+			ORNT_NM = #{orntNm, jdbcType=VARCHAR},
+			WRKPLC_NM = #{wrkplcNm, jdbcType=VARCHAR}, 
+			OFCPS_NM = #{ofcpsNm, jdbcType=VARCHAR},  
+			ATNDDU = #{atnddu, jdbcType=VARCHAR}
+		WHERE MEM_ID = #{memId, jdbcType=VARCHAR}
+		AND CAREER_MATTER_NO = #{careerMatterNo, jdbcType=NUMERIC}
+	</update>
+
+	<insert id="insertMyCareer" parameterType="kr.or.ddit.mypage.vo.CareerListVO">
+		<selectKey  keyProperty="careerMatterNo" resultType="int" order="BEFORE">
+			SELECT MAX(NVL(CAREER_MATTER_NO, 0)) + 1 
+			FROM CAREER_MATTER 
+		</selectKey>  
+		INSERT ALL
+		<foreach collection="newCareerList" item="career" index="idx">
+		INTO CAREER_MATTER
+		(
+			CAREER_MATTER_NO, PARTCPTN_BIZ, BEGINDE, 
+			ENDDE, ORNT_NM, WRKPLC_NM, OFCPS_NM, ATNDDU, MEM_ID
+		)
+		VALUES
+		(
+			#{careerMatterNo    , jdbcType=NUMERIC}+#{idx},
+			#{career.partcptnBiz, jdbcType=VARCHAR},
+			#{career.beginde    , jdbcType=DATE}, 
+			#{career.endde      , jdbcType=DATE},
+			#{career.orntNm     , jdbcType=VARCHAR},
+			#{career.wrkplcNm   , jdbcType=VARCHAR},
+			#{career.ofcpsNm    , jdbcType=VARCHAR},
+			#{career.atnddu     , jdbcType=VARCHAR},
+			#{career.memId      , jdbcType=VARCHAR}
+		)
+		</foreach>
+		SELECT * FROM DUAL 
+	</insert>
+	
+	<delete id="deleteCareer" parameterType="kr.or.ddit.mypage.vo.CareerListVO">
+		DELETE FROM CAREER_MATTER
+		WHERE CAREER_MATTER_NO IN 
+		<foreach collection="careerNos" item="no" open="(" separator="," close=")">
+			#{no, jdbcType=NUMERIC} 
+		</foreach>
+		AND MEM_ID = #{memId , jdbcType=VARCHAR}
+	</delete>
+	 
+	<update id="updateMyPassword" parameterType="kr.or.ddit.mypage.vo.MyMemVO">
+		UPDATE MEM 
+		SET MEM_PASS = #{memPass, jdbcType=VARCHAR}
+		WHERE MEM_ID= #{memId, jdbcType=VARCHAR }
+	</update>
+	
+	<update id="updatetMyProfileImg" parameterType="kr.or.ddit.mypage.vo.MyMemVO">
+		UPDATE MEM  
+		SET PROFL_IMG_NM = #{proflImgNm, jdbcType=VARCHAR} 
+		WHERE MEM_ID= #{memId, jdbcType=VARCHAR }
+	</update> 
+	
+	<select id="selectMyProfileSet" parameterType="String" resultType="kr.or.ddit.mypage.vo.MemSetVO">
+		SELECT SETUP_CODE, SETUP_CN_NO, SETUP_DETAIL_NO, MEM_ID, SETUP_VALUE
+		FROM MEM_SETUP
+		WHERE MEM_ID = #{memId}
+		AND SETUP_CODE = 'S00107'	
+	</select>
+	
+	<update id="updateMyProfileSet" parameterType="kr.or.ddit.mypage.vo.MemSetVO">
+		UPDATE MEM_SETUP
+		SET 
+		SETUP_VALUE = #{setupValue}
+		WHERE MEM_ID = #{memId} 
+		AND SETUP_CODE = 'S00107'	
+		AND SETUP_CN_NO =#{setupCnNo}
+		AND SETUP_DETAIL_NO = #{setupDetailNo} 
+	</update>
+	
+	<select id="selectMyPushSet" parameterType="String" resultType="kr.or.ddit.mypage.vo.MemSetVO">
+		SELECT SETUP_CODE, SETUP_CN_NO, SETUP_DETAIL_NO, MEM_ID, SETUP_VALUE
+		FROM MEM_SETUP
+		WHERE MEM_ID = #{memId} 
+		AND SETUP_CODE = 'S00106'	
+	</select>
+	
+	<update id="updateMyPushSet" parameterType="kr.or.ddit.mypage.vo.MemSetVO">
+		UPDATE MEM_SETUP
+		SET  
+		SETUP_VALUE = #{setupValue}
+		WHERE MEM_ID = #{memId} 
+		AND SETUP_CODE = 'S00106'	
+		AND SETUP_CN_NO =#{setupCnNo}
+		AND SETUP_DETAIL_NO = #{setupDetailNo} 
+	</update>
+</mapper>

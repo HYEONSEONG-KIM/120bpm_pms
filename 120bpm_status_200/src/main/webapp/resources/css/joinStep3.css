@@ -1,0 +1,212 @@
+@charset "UTF-8";
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300&display=swap'); 
+@import url('https://fonts.googleapis.com/css2?family=Geostar&family=Geostar+Fill&display=swap');
+body{
+   padding-top : 10px;
+   background-size: 100%; 
+   font-family: 'Noto Sans KR', sans-serif; 
+   box-sizing: border-box;
+   background: #ffffff;
+}  
+
+
+/* .btn{ */
+/*    background: #e3c42b; */
+/*    border-color:#e3c42b; */
+/*    color : white; */
+/* } */
+
+
+.submit{
+   background: #28d1d1;
+   border-color:#28d1d1;
+   color : white;
+}
+
+.addCareerBtn .subCareerBtn{
+	margin: 5px;
+	
+}
+.member_join_step { 
+       overflow: hidden;
+       margin-bottom: 50px;
+   } 
+.member_join_step ul li {
+    float: left;
+    width: 25%;
+    list-style: none;
+    text-align: center; 
+}
+.member_join_area .member_join_step ul li span.step_level {
+    padding-top: 140px;
+    font-weight: bold;
+    color: #02468a;
+    font-size: 20px;
+    letter-spacing: -0.08em;
+}
+.member_join_area .member_join_step ul li span {
+    display: block;
+}
+
+.step_title{
+   font-size: 16px;
+}
+
+.step_level{
+   color: #02468a;
+   font-weight: bold;
+   font-size: 16px;
+}
+   
+.container {
+   margin-top: 2%;
+   width: 80%;
+   margin: auto;
+}
+
+.form-horizontal {
+   background: white;
+   border: 1px solid lightgrey;
+   padding : 1% 1%;
+   width : 100%;   
+}
+
+/* .plus{ */
+/* 	margin : 5px 2px 0px 20px; */
+/* } */
+
+p{
+	font-size : 20px;
+}
+
+#email1, #email2 {
+   display: inline-block;
+}
+
+.form-group {
+   clear: both;
+}
+
+
+.titlebar {
+   background: white;
+}
+
+.form-group div {
+   display: inline-block;
+}
+
+.vertical-top {
+   vertical-align: top;
+}
+
+.control-label {
+   text-align: right;
+   font-size: 1.2rem;
+   vertical-align: top;
+}
+
+.inline-block{  
+   display: inline-block;
+}
+  
+h1{
+   text-align: center;
+} 
+
+.logotext{
+   font-family: 'Geostar Fill', cursive;
+   margin: 20px;
+   font-size : 40px;
+}
+
+textarea{
+   width : 100%;   
+} 
+
+
+.flex-justify-center{
+   display: flex;
+   justify-content: center;
+}
+
+.submit{
+   width : 10%; 
+   height: 50px;
+}
+
+
+.careerFont {
+   font-family: "돋움", Dotum, "Apple SD Gothic Neo", Helvetica, Sans-serif;
+   font-size: 16pt;
+   font-weight: 600;
+   padding: 3px 0 0 10px;
+   color: black;
+   display: block;
+   padding-left: 45px;
+   
+}
+
+.error {
+   font-family: "돋움", Dotum, "Apple SD Gothic Neo", Helvetica, Sans-serif;
+   font-size: 9pt;
+   font-weight: 600;
+   padding: 3px 0 0 10px;
+   color: red;
+   display: block;
+}
+
+.form-control {
+   font-family: "돋움", Dotum, "Apple SD Gothic Neo", Helvetica, Sans-serif;
+   font-size: 9pt;
+   font-weight: 600;
+   padding: 3px 0 0 10px;
+   color: blue;
+   display: block;
+}
+
+.insertBtn .deleteBtn{
+   font-family: "돋움", Dotum, "Apple SD Gothic Neo", Helvetica, Sans-serif;
+   font-weight: 600;
+   padding: 3px 0 0 10px;
+   margin: 5px; 
+   padding-left : 80%;
+}
+
+.careerImg{
+	width:120px;
+}
+
+
+.logotext{
+	font-family: 'Geostar Fill', cursive;
+	margin: 20px;
+    font-size: 40px;
+}
+.inline-hr{
+	display: inline-block;
+	width : 100px;
+	border: 1px solid lightsteelblue;
+	margin : 0 10px;
+	vertical-align: middle; 
+} 
+hr{
+	border: 1px solid lightsteelblue;
+	width : 400px;
+}
+#logo{ 
+	width :100px;
+}
+
+h1{
+	margin: 0; 
+}
+
+.pldel{
+	padding-left : 2%;
+}
+.line_dot {
+    padding: 0px 0px 20px 0px;;
+    border-top: 2px solid white;
+    text-align: center;
+}

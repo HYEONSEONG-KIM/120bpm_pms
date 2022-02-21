@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.work.dao.WorkFileDAO">
+<!-- 
+	각자 파일을 insert 할 때는 각 파일 vo에서 테이블명과 변수명만 바꾸시면 됩니다
+ -->
+  <update id="workFileUpdate" parameterType="kr.or.ddit.work.vo.WorkVO">
+	 <foreach collection="workFileList" index="idx" item="file" separator=";" open="DECLARE BEGIN" close="; END;">
+	    UPDATE ATCH_FILE
+    	SET
+      	TEMP_AT =#{file.workFiletempAt},
+      	BO_NO =#{workCode}
+	 	<where>
+       FILE_SAVED_NM =#{file.workFileSavedNm}
+	 	</where>
+	 </foreach>
+	 
+	 </update>  
+	 
+	 <insert id="insertWorkFile" parameterType="kr.or.ddit.work.vo.WorkVO">
+	 	INSERT ALL
+	 <foreach collection="workFileList" item="file"  >
+	  
+ 	    INTO WORK_FILE (
+			    WORK_FILE_NM,
+			    WORK_FILE_SAVED_NM,
+			    WORK_FILE_CODE,  
+			    WORK_CODE,
+			    WORK_FILE_DEL_AT,
+			    CTGRY_CODE,
+			    PRJCT_NO
+		 )
+			VALUES (
+			#{file.workFileNm,jdbcType=VARCHAR},
+			#{file.workFileSavedNm,jdbcType=VARCHAR},
+			(SELECT  FILE_NO FROM    atch_file
+    			WHERE   PRJCT_NO = #{prjctNo}
+   				AND FILE_SAVED_NM =#{file.workFileSavedNm}),
+			#{workCode,jdbcType=VARCHAR},
+			#{file.workFileDelAt , jdbcType=VARCHAR},
+			#{ctgryCode,jdbcType=VARCHAR},
+			#{prjctNo,jdbcType=NUMERIC}
+			)
+	 </foreach>
+	 SELECT * FROM DUAL
+	 </insert>
+	 
+	 
+	 <delete id="deleteALLWorkFile"  parameterType="kr.or.ddit.work.vo.WorkVO">
+	 	<!-- 워크파일의 파일 모두 삭제 -->
+	 	DELETE FROM WORK_FILE
+		WHERE WORK_CODE IN 
+		<foreach collection="workCodes" item="workCode" index="i" separator="," open="(" close=")">
+		  #{workCode}
+		</foreach>
+	 </delete>
+	 <delete id="deleteALLAttatch" parameterType="kr.or.ddit.work.vo.WorkVO">
+	 	DELETE FROM ATCH_FILE 
+		WHERE BO_NO  IN 
+		<foreach collection="workCodes" item="workCode" index="i" separator="," open="(" close=")">
+		  #{workCode}
+		</foreach>
+	 </delete>
+	 
+	 <delete id="deleteAttatches" parameterType="kr.or.ddit.work.vo.WorkVO">
+	 	DELETE FROM ATCH_FILE 
+	 	WHERE FILE_NO IN 
+	 <foreach collection="delFileNo" item="fileNo" open="(" close=")" separator=",">
+	 	#{fileNo}
+		</foreach>
+	 </delete>
+	 
+	 <delete id="deleteWorkFile" parameterType="kr.or.ddit.work.vo.WorkVO">
+		DELETE FROM WORK_FILE
+		WHERE WORK_FILE_CODE IN
+		 <foreach collection="delFileNo" item="fileNo" open="(" close=")" separator=",">
+	 	#{fileNo}
+		</foreach>
+	 </delete>
+	 <select id="selectWorkFileInfo" parameterType="String" resultType="kr.or.ddit.work.vo.WorkFileVO">
+		SELECT
+		    WORK_FILE_SAVED_NM,
+		    WORK_FILE_CODE,
+		    WORK_CODE,
+		    WORK_FILE_DEL_AT,
+		    CTGRY_CODE,
+		    PRJCT_NO
+		FROM
+		    WORK_FILE
+		   WHERE WORK_FILE_CODE = #{fileNo}
+	 </select>
+	 
+	 
+</mapper>

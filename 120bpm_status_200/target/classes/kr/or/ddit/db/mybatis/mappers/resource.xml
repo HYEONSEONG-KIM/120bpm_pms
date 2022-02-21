@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.security.dao.ResourceDAO">
+	
+	<resultMap type="kr.or.ddit.security.vo.ResourceVO" id="resMap" autoMapping="true">
+		<id column="RESRCE_CODE" property="resrceCode"/>
+		<collection property="authorities" javaType="java.util.List" ofType="kr.or.ddit.security.vo.AuthorityVO" autoMapping="true">
+			<id column="AUTHOR" property="author"/>
+		</collection>
+	</resultMap>
+	
+	<select id="selectAllSortedResources" resultMap="resMap">
+		SELECT
+		    A.RESRCE_CODE,    RESRCE_NM,    RESRCE_PTTRN,
+		    RESRCE_DC,    RESRCE_TY,    RESERCE_SORT_ORDR,    RESRCE_CREATDE,
+		    RESRCE_UPDTDE,    MENU_CL_CODE, AUTHOR
+		FROM
+		    RESRCE A LEFT OUTER JOIN RESRCE_ROLE_MAPNG B ON (A.RESRCE_CODE = B.RESRCE_CODE)
+	</select>
+
+	<select id="selectProjectRoleMonth" resultType="kr.or.ddit.accept.vo.ProjectMemVO" parameterType="string">
+			SELECT
+				MEM_ID,
+				A.AUTHOR,
+				A.PRJCT_NO,
+				EXTRACT(MONTH FROM CREATEDE) CREATE_MONTH
+			FROM
+				PROJECT_MEM A LEFT OUTER JOIN PROJECT B ON (A.PRJCT_NO = B.PRJCT_NO)
+				WHERE AUTHOR = #{roleId}
+			AND EXTRACT(YEAR FROM CREATEDE) = EXTRACT(YEAR FROM SYSDATE)
+             AND B.DELET_STATE = 0
+	</select>
+
+	<resultMap type="kr.or.ddit.security.vo.ResourceVO" id="resourceMap" autoMapping="true">
+		<id column="RESRCE_CODE" property="resrceCode"/>
+		<collection property="authorities" javaType="java.util.List" ofType="kr.or.ddit.security.vo.AuthorityVO" autoMapping="true">
+			<id column="AUTHOR" property="author"/>
+		</collection>
+	</resultMap>
+	
+	<select id="selectAllResource" resultMap="resourceMap">
+			SELECT
+			A.RESRCE_CODE, RESRCE_NM, RESRCE_PTTRN,
+			HTTP_METHOD, RESRCE_DC, RESRCE_PARENT
+			, AUTHOR
+			, LEVEL
+			FROM RESRCE A LEFT OUTER JOIN RESRCE_ROLE_MAPNG B
+			ON (A.RESRCE_CODE = B.RESRCE_CODE)
+			WHERE RESRCE_PTTRN LIKE '/project/%' AND A.RESRCE_CODE != 'web-000076'
+			START WITH RESRCE_PARENT IS NULL
+			CONNECT BY PRIOR A.RESRCE_CODE = RESRCE_PARENT
+	</select>
+	
+	<delete id="deleteResourceMapping" parameterType="kr.or.ddit.security.vo.AuthorityVO">
+		DELETE FROM RESRCE_ROLE_MAPNG
+		WHERE AUTHOR = #{author} AND RESRCE_CODE != 'web-000076'
+	</delete>
+	
+	<insert id="insertResourceMapping" parameterType="kr.or.ddit.security.vo.AuthorityVO">
+		INSERT ALL
+		<foreach collection="resrceCode" item="resId">
+			INTO RESRCE_ROLE_MAPNG (AUTHOR, RESRCE_CODE)
+			VALUES (#{author}, #{resId})
+		</foreach>
+		SELECT * FROM DUAL
+	</insert>
+	
+	<select id="seleteProjectResource" resultType="kr.or.ddit.security.vo.ResourceVO">
+			SELECT
+				RESRCE_CODE, RESRCE_NM, RESRCE_PTTRN,
+				HTTP_METHOD, RESRCE_DC, LEVEL
+			FROM
+				RESRCE
+				WHERE RESRCE_PTTRN LIKE '/project/%'
+			START WITH RESRCE_PARENT IS NULL
+			CONNECT BY PRIOR RESRCE_CODE = RESRCE_PARENT
+	</select>
+	
+	<select id="selectProjectMem" resultType="kr.or.ddit.accept.vo.ProjectMemVO">
+		SELECT
+			MEM_ID,A.AUTHOR,A.PRJCT_NO,CREATEDE
+		FROM PROJECT_MEM A LEFT OUTER JOIN PROJECT B ON (A.PRJCT_NO = B.PRJCT_NO)
+			WHERE DELET_STATE = 0
+	</select>
+	
+	<select id="selectLevel2Res" resultType="kr.or.ddit.security.vo.ResourceVO">
+			SELECT
+			resrce_code,
+			resrce_dc
+			FROM
+			resrce
+			WHERE RESRCE_PTTRN LIKE '/project/%' and level = 2
+			START WITH RESRCE_PARENT IS NULL
+			CONNECT BY PRIOR RESRCE_CODE = RESRCE_PARENT
+	</select>
+	
+</mapper>

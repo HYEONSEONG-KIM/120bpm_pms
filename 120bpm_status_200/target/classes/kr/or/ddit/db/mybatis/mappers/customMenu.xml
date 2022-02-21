@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.main.dao.CustomMenuDao">
+	<select id="selectMyPrjctWorkList" parameterType="kr.or.ddit.mypage.vo.MyWorkVO" resultType="kr.or.ddit.mypage.vo.MyWorkVO">
+		SELECT B.*
+		FROM(
+		    SELECT ROWNUM AS RNUM, A.*
+		    FROM(
+		        SELECT W.PRJCT_NO, W.CTGRY_CODE, C.CTGRY_NM, WORK_CODE, WORK_SJ,
+					MEM_ID, 
+		            MAKENAMEFORMAT((SELECT MEM_FNM FROM MEM M WHERE M.MEM_ID = W.MEM_ID),(SELECT MEM_LNM FROM MEM M WHERE M.MEM_ID = W.MEM_ID),MEM_ID) MEM_NAME,   
+					MAKEDATEFORMAT(WORK_BGNDE) WORK_BGNDE, 
+					MAKEDATEFORMAT(WORK_ENDDE) WORK_ENDDE ,
+					MAKEDATEFORMAT(WORK_RGSDE) WORK_RGSDE,
+		            WORK_STTUS_CODE,(SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CODE_NO = W.WORK_STTUS_CODE) STTUS_NM,
+		            WORK_PRIORT_CODE, (SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CODE_NO = W.WORK_PRIORT_CODE) PRIORT_NM,
+					WORK_PRGS_DGREE_POINT, WORK_OTHBC_AT
+		            FROM WORK W INNER JOIN WORK_CATEGORY C ON(W.CTGRY_CODE = C.CTGRY_CODE)
+		        WHERE W.MEM_ID = #{memId}   
+		        AND W.PRJCT_NO = #{prjctNo}
+				AND (W.WORK_REQ_STTUS_CODE != 'W00302' OR W.WORK_REQ_STTUS_CODE IS NULL)
+		        ORDER BY W.WORK_ENDDE 
+		        ) A 
+		    ) B  
+		WHERE RNUM BETWEEN 1 AND 5
+	</select>
+	
+	<select id="selectMyPrjctWorkBkmkList" parameterType="kr.or.ddit.mypage.vo.MyWorkBkmkVO" resultType="kr.or.ddit.mypage.vo.MyWorkVO">
+		SELECT B.*
+		FROM(
+		    SELECT ROWNUM AS RNUM, A.*
+		        FROM(
+		    SELECT W.PRJCT_NO, P.PRJCT_NM, W.CTGRY_CODE, C.CTGRY_NM, W.WORK_CODE, WORK_SJ,
+		    MAKEDATEFORMAT(WORK_ENDDE) WORK_ENDDE , 
+		    WORK_PRIORT_CODE, (SELECT CODE_NM FROM CMMN_CODE_DETAIL WHERE CODE_NO = W.WORK_PRIORT_CODE) PRIORT_NM,
+		    WORK_PRGS_DGREE_POINT,
+		    B.MEM_ID,
+		    MAKENAMEFORMAT((SELECT MEM_FNM FROM MEM M WHERE M.MEM_ID = B.MEM_ID),(SELECT MEM_LNM FROM MEM M WHERE M.MEM_ID = B.MEM_ID),B.MEM_ID) MEM_NAME
+		        FROM WORK W INNER JOIN WORK_CATEGORY C ON(W.CTGRY_CODE = C.CTGRY_CODE)
+		            INNER JOIN PROJECT P ON(W.PRJCT_NO = P.PRJCT_NO)
+		            INNER JOIN WORK_BKMK B ON(W.WORK_CODE = B.WORK_CODE)
+		    WHERE B.MEM_ID = #{memId}   
+		    AND W.PRJCT_NO = #{prjctNo}
+		    ORDER BY W.WORK_ENDDE
+		    ) A 
+		) B 
+		WHERE RNUM BETWEEN 1 AND 5
+	</select>
+	
+	<select id="selectPrjctCurNews" parameterType="int" resultType="kr.or.ddit.main.vo.MyBoardVO">
+		SELECT A.*
+		FROM(
+		    SELECT 
+		        B.PRJCT_NO, B.MENU_CL_CODE, BO_NO, BO_SJ, 
+		        BO_CN, PARENT_BO_NO,  B.MEM_ID, 
+		        MAKENAMEFORMAT(M.MEM_FNM, M.MEM_LNM, B.MEM_ID) MEM_NAME,
+		        MAKEDATEFORMAT(B.BO_RGSDE) || ' ' || MAKETIMEFORMAT(B.BO_RGSDE) BO_RGSDE, 
+		        ROW_NUMBER() OVER(ORDER BY BO_RGSDE DESC) RNUM,
+		        LIKE_CNT, BO_PARENT, OTHBC_AT
+		    FROM BOARD B INNER JOIN MEM M ON(B.MEM_ID = M.MEM_ID)
+		    WHERE B.MENU_CL_CODE = 'NE'
+		    AND B.PRJCT_NO = #{prjctNo}
+		)A
+		WHERE RNUM = 1
+	</select>
+	
+	<select id="selectPrjctCurWiki" parameterType="int" resultType="kr.or.ddit.main.vo.MyBoardVO">
+		SELECT A.*
+		FROM(
+		    SELECT 
+		        B.PRJCT_NO, B.MENU_CL_CODE, BO_NO, BO_SJ, 
+		        BO_CN, PARENT_BO_NO,  B.MEM_ID, 
+		        MAKENAMEFORMAT(M.MEM_FNM, M.MEM_LNM, B.MEM_ID) MEM_NAME,
+		        MAKEDATEFORMAT(B.BO_RGSDE) || ' ' || MAKETIMEFORMAT(B.BO_RGSDE) BO_RGSDE, 
+		        ROW_NUMBER() OVER(ORDER BY BO_RGSDE DESC) RNUM,
+		        LIKE_CNT, BO_PARENT, OTHBC_AT
+		    FROM BOARD B INNER JOIN MEM M ON(B.MEM_ID = M.MEM_ID)
+		    WHERE B.MENU_CL_CODE = 'WK'
+		    AND B.PRJCT_NO = #{prjctNo}
+		)A
+		WHERE RNUM = 1
+	</select>
+	
+<!-- 	<select id="selectPrjctCurIssue"> -->
+	
+<!-- 	</select> -->
+</mapper>

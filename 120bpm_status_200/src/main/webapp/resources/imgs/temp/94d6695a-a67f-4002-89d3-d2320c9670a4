@@ -1,0 +1,9 @@
+--pstmt.setString(i++, employee.getEmpno());
+SELECT 'pstmt.set'||
+    DECODE(DATA_TYPE, 'NUMBER', 'Int', 'String')||
+    '(i++, employee.get'||
+    SUBSTR(COLUMN_NAME, 1, 1)||
+    LOWER(SUBSTR(COLUMN_NAME, 2))||
+    '());'
+FROM COLS
+WHERE TABLE_NAME = 'EMP';

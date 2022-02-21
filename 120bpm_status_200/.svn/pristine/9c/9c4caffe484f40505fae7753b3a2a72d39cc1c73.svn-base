@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.free.dao.FreeReplyDAO">
+	
+<select id="selectReplyList" resultType="kr.or.ddit.free.vo.FreeReplyVO" parameterType="kr.or.ddit.free.vo.FreePagingVO" >
+			SELECT B.*
+		FROM (
+			SELECT A.*, ROWNUM RNUM 
+			FROM (
+				<![CDATA[
+				SELECT
+					REP_NO,		    REP_WRITER,		    MAKEDATEFORMAT(REP_RGSDE) REP_RGSDE,
+					REP_CN,
+					LPAD('     ┗ ', 6*4*(LEVEL-1), '&nbsp;') || REP_CN DISPLAY_CN,		    
+				    BO_NO
+				    , REP_PARENT
+				    , MEM_ID, PRJCT_NO
+				FROM REP
+				]]>
+				<include refid="whereClause" />  
+				START WITH REP_PARENT IS NULL
+				CONNECT BY PRIOR REP_NO = REP_PARENT
+				ORDER SIBLINGS BY REP_NO DESC
+			)  A
+		)  B
+		WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+
+
+<select id="selectTotalRecord" resultType="int" parameterType="kr.or.ddit.free.vo.FreePagingVO">
+  SELECT COUNT(*) FROM
+  REP
+  WHERE BO_NO = #{detailSearch.boNo} AND MENU_CL_CODE = 'FR'
+	
+</select>
+
+
+	<insert id="insertReply" parameterType="kr.or.ddit.free.vo.FreeReplyVO">
+		<selectKey keyProperty="repNo" resultType="int" order="BEFORE">
+			SELECT NVL(MAX(REP_NO), 0) + 1 FROM REP
+		</selectKey>
+		INSERT INTO REP (
+		    REP_CN,    MEM_ID,    REP_RGSDE,
+            REP_NO,    BO_NO,     PRJCT_NO, MENU_CL_CODE, 
+            REP_WRITER,	 REP_PASS
+		    <if test="repParent != null and repParent gt 0">
+            , REP_PARENT
+		    </if>
+		) VALUES (
+		    #{repCn,jdbcType=VARCHAR}, #{memId,jdbcType=VARCHAR}, SYSDATE, 
+            #{repNo,jdbcType=NUMERIC},	#{boNo,jdbcType=NUMERIC},  #{prjctNo,jdbcType=NUMERIC},  'FR',
+            #{repWriter,jdbcType=VARCHAR},	
+		    #{repPass,jdbcType=VARCHAR} 				
+		    <if test="repParent != null and repParent gt 0">
+		    	, #{repParent,jdbcType=NUMERIC}
+		    </if>
+		)
+	</insert>
+	<sql id="whereClause">
+		WHERE BO_NO = #{detailSearch.boNo} AND MENU_CL_CODE = 'FR'
+	</sql>
+
+
+	<delete id="deleteReply" parameterType="kr.or.ddit.free.vo.FreeReplyVO">
+	 DELETE FROM REP
+	 WHERE
+     REP_NO = #{repNo} and MENU_CL_CODE = 'FR'
+	</delete>
+
+	<update id="updateReply" parameterType="kr.or.ddit.free.vo.FreeReplyVO">
+	    UPDATE REP
+	    SET
+	    REP_CN =  #{repCn}
+	    WHERE REP_NO = #{repNo} and MENU_CL_CODE = 'FR'
+		
+	</update>
+
+	<select id="selectRepPass" parameterType="kr.or.ddit.free.vo.FreeReplyVO" resultType="string">
+		SELECT REP_PASS 
+		FROM REP
+		WHERE REP_NO = #{repNo}
+	</select>
+	
+	<select id="selectFreeRepInfo" parameterType="kr.or.ddit.free.vo.FreeReplyVO" resultType="kr.or.ddit.free.vo.FreeReplyVO"> 
+	SELECT
+    REP_CN,    MEM_ID,    REP_RGSDE,    REP_NO,
+    BO_NO,    PRJCT_NO
+FROM
+    REP
+    WHERE     BO_NO = #{boNo} and MENU_CL_CODE = 'FR'
+	AND    REP_NO = #{repNo}
+	</select>
+</mapper>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.chatting.dao.ChattingDAO">
+	
+	<select id="selectChatRoom" parameterType="kr.or.ddit.accept.vo.ProjectMemVO" resultType="kr.or.ddit.chatting.vo.ChatRoomVO">
+		SELECT
+			CHTTROOM_CODE, CHTTROOM_SJ, MEM_ID,
+			CHTTROOM_RGSDE, PRJCT_NO
+		FROM
+			CHATTINGROOM
+		WHERE
+			PRJCT_NO = #{prjctNo}
+	</select>
+	
+	<select id="messageList" parameterType="string" resultType="kr.or.ddit.chatting.vo.MessageVO">
+		SELECT
+			MSSAGE_CN, 
+			TO_CHAR(MSSAGE_WRITDE, 'MM/DD HH24:MI') MSSAGE_WRITDE, 
+			MSSAGE_NO, A.MEM_ID, PRJCT_NO, CHTTROOM_CODE,
+			MAKENAMEFORMAT(MEM_FNM, MEM_LNM, B.MEM_ID) MEM_NAME,
+			PROFL_IMG_NM
+		FROM
+			MSSAGE A LEFT OUTER JOIN MEM B ON (A.MEM_ID = B.MEM_ID)
+		WHERE
+			CHTTROOM_CODE = #{chatRoomNo}
+		ORDER BY MSSAGE_WRITDE
+	</select>
+
+	<select id="chatRoomNo" parameterType="int" resultType="string">
+		SELECT
+			CHTTROOM_CODE
+		FROM
+			CHATTINGROOM
+		WHERE PRJCT_NO = #{prtId}
+	</select>
+	
+	<insert id="insertMsg" parameterType="kr.or.ddit.chatting.vo.MessageVO">
+		<selectKey keyProperty="mssageNo" resultType="int" order="BEFORE">
+			SELECT MSSAGE_NO_SEQ.NEXTVAL FROM DUAL
+		</selectKey>
+	
+		INSERT INTO MSSAGE (
+			MSSAGE_CN, MSSAGE_WRITDE, MSSAGE_NO,
+			MEM_ID, PRJCT_NO, CHTTROOM_CODE
+		) VALUES (
+			#{mssageCn,jdbcType=CLOB},
+			SYSDATE,
+			#{mssageNo,jdbcType=NUMERIC},
+			#{memId,jdbcType=VARCHAR},
+			#{prjctNo,jdbcType=NUMERIC},
+			#{chttroomCode,jdbcType=VARCHAR}
+		)
+	</insert>
+</mapper>

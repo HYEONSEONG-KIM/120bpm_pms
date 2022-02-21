@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.file.dao.FileDAO">
+	<sql id="whatProject">
+		WHERE   F.PRJCT_NO =  #{pMap.pCode} AND  F.TEMP_AT =0
+	</sql>
+	 
+	<select id="selectDeleteTemp" resultType="kr.or.ddit.file.vo.AtchFIleVO">
+	<![CDATA[
+	 SELECT 
+     FILE_SAVED_NM,
+     FILE_RGSDE,
+     TEMP_AT,
+     FILE_NO
+    FROM 
+    	 ATCH_FILE
+    WHERE 
+    TRUNC( TO_DATE(FILE_RGSDE ) -SYSDATE  ) <=-7 
+    AND  TEMP_AT= '1' 
+	]]>
+	</select>
+	
+	
+	<select id="selectAttatchList"  parameterType="map" resultType="kr.or.ddit.file.vo.AtchFIleVO" >
+			SELECT MENU_CL_NM  
+		<choose>
+			<when test="pMap!= null and pMap.containsKey('clCode')">
+				, F.FILE_NM,
+				F.FILE_SAVED_NM,
+				F.FILE_NO,
+				F.FILE_MIME,
+				F.FILE_SIZE ||'KB' FILE_SIZE_STR,
+				PRJCT_NM ,
+				F.mem_Id , 
+				F.MENU_CL_CODE  ,
+				MAKENAMEFORMAT(b.MEM_FNM, b.MEM_LNM, b.MEM_ID ) MEM_NAME,
+		        MAKEDATEFORMAT(f.FILe_Rgsde) FILE_RGSDE,
+		        CASE     
+			    WHEN F.MENU_CL_CODE ='WO'  THEN '/project/'||f.PRJCT_NO||'/workDetail/'||w.work_code  
+			 	WHEN  F.MENU_CL_CODE ='FI' THEN  '#'        
+			  	WHEN  F.MENU_CL_CODE ='IS' THEN '/project/'||f.PRJCT_NO||'/issue/Detail/'||i.issue_no  
+			   	WHEN  F.MENU_CL_CODE ='WK' THEN '/project/'||f.PRJCT_NO||'/wiki/detail/'||b.BO_NO     
+			  	WHEN F.MENU_CL_CODE ='FR' THEN '/project/'||f.PRJCT_NO||'/freeboard/detail/'||b.BO_NO
+			  	WHEN F.MENU_CL_CODE ='NE' THEN '/project/'||f.PRJCT_NO||'/news/detail/'||b.BO_NO    
+			  END AS BO_LINK     
+			  FROM MENU_CL M INNER JOIN ATCH_FILE F ON (M.MENU_CL_CODE =F.MENU_CL_CODE)  
+			 				 INNER  JOIN MEM B ON (F.MEM_ID = B.MEM_ID)
+			 				 INNER JOIN PROJECT P ON(F.PRJCT_NO =P.PRJCT_NO)
+							 LEFT OUTER JOIN WORK_FILE W ON (W.WORK_FILE_CODE = F.FILE_NO)
+							 LEFT OUTER JOIN ISSUE_FILE I ON (F.FILE_NO = I.ISSUE_FILE_CODE)
+							 LEFT OUTER JOIN BO_FILE B ON (F.FILE_NO = B.BO_FILE_CODE)
+				<include refid="whatProject"></include>
+				AND M.MENU_CL_CODE = #{pMap.clCode}
+				ORDER BY F.FILE_RGSDE DESC
+			</when>
+		<otherwise>
+			, count(*) File_COUNT ,F.MENU_CL_CODE
+			FROM
+		    ATCH_FILE F LEFT OUTER JOIN  MENU_CL M  ON (M.MENU_CL_CODE =F.MENU_CL_CODE)  
+			<include refid="whatProject"></include>
+			GROUP BY F.MENU_CL_CODE , MENU_CL_NM
+			ORDER BY File_COUNT DESC
+		</otherwise>
+				
+			</choose>
+	</select>
+			
+	<select id="selectAttatchDetail" resultType="kr.or.ddit.file.vo.AtchFIleVO" parameterType="String">
+		SELECT
+		    FILE_NM,    FILE_SIZE,    FILE_RGSDE,
+		    FILE_SAVED_NM,    FANCY_SIZE,   ADD_DC,
+		    FILE_NO,    MENU_CL_CODE,    FILE_MIME,
+		    PRJCT_NO,    BO_NO,    TEMP_AT
+		FROM
+		    ATCH_FILE
+		    WHERE FILE_NO = #{fileNo}
+		
+			
+	</select>
+			
+			
+			<update id="updateFileName" parameterType="kr.or.ddit.file.vo.AtchFIleVO">
+					  UPDATE atch_file
+					    SET
+					       FILE_NM =#{reFileNm, jdbcType=VARCHAR}
+					WHERE
+					     FILE_NO =#{fileNo , jdbcType=NUMERIC}
+			</update>
+			
+ 		
+		<update id="updateWorkFIleName" parameterType="kr.or.ddit.file.vo.AtchFIleVO">
+				UPDATE WORK_FILE
+		    SET
+		        WORK_FILE_NM = #{reFileNm, jdbcType=VARCHAR}
+		WHERE
+		    WORK_FILE_CODE =#{fileNo , jdbcType=NUMERIC}
+		
+		</update>
+	
+		<update id="updateIssueFileName" parameterType="kr.or.ddit.file.vo.AtchFIleVO">
+			  UPDATE ISSUE_FILE
+	   	 SET
+	        ISSUE_FILE_NM = #{reFileNm, jdbcType=VARCHAR}
+		WHERE
+	       ISSUE_FILE_CODE =#{fileNo , jdbcType=NUMERIC}
+		</update>
+	
+		<update id="updateBoFileName" parameterType="kr.or.ddit.file.vo.AtchFIleVO">
+				UPDATE  BO_FILE
+		    SET
+		         BO_FILE_NM  = #{reFileNm, jdbcType=VARCHAR}
+		WHERE
+		    BO_FILE_CODE =#{fileNo , jdbcType=NUMERIC}
+		
+		
+		</update>
+		
+		<delete id="deleteAttatchAll" parameterType="kr.or.ddit.file.vo.AtchFIleVO">
+		DELETE FROM ATCH_FILE 
+	 	WHERE FILE_NO IN 
+	 	<foreach collection="fileNos" item="fileNo" open="(" close=")" separator=",">
+	 	#{fileNo}
+		 </foreach>
+		
+		</delete>
+		
+		<delete id="deleteWorkFile" parameterType="kr.or.ddit.work.vo.WorkVO">
+			DELETE FROM WORK_FILE
+		WHERE WORK_FILE_CODE IN
+		 <foreach collection="delFileNo" item="fileNo" open="(" close=")" separator=",">
+	 	#{fileNo}
+		</foreach>
+		</delete>
+		
+		<delete id="deleteIssueFile" parameterType="kr.or.ddit.issue.vo.IssueVO">
+		DELETE FROM ISSUE_FILE
+		WHERE ISSUE_FILE_CODE IN
+		<foreach collection="delFileNo" item="fileNo" open="(" close=")" separator=",">
+	 	#{fileNo}
+		</foreach>
+		</delete>
+		
+		<delete id="deleteBoFile" parameterType="kr.or.ddit.file.vo.BoVO">
+		DELETE FROM BO_FILE 
+		WHERE BO_FILE_CODE IN
+		<foreach collection="delFileNo" item="fileNo" open="(" close=")" separator=",">
+	 	#{fileNo}
+		</foreach>
+		</delete>
+		
+		<update id="updateFileStatus" parameterType="kr.or.ddit.file.vo.AtchFIleVO">
+			    UPDATE ATCH_FILE
+		    	SET
+		      	TEMP_AT =#{tempAt} 
+			 	<where>
+		       FILE_SAVED_NM =#{fileSavedNm}
+			 	</where>
+		
+		</update>
+
+
+</mapper>

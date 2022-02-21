@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:websocket="http://www.springframework.org/schema/websocket"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/websocket http://www.springframework.org/schema/websocket/spring-websocket-4.3.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-4.3.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.3.xsd">
+
+
+	<context:component-scan base-package="kr.or.ddit">
+		<context:include-filter type="annotation" expression="org.aspectj.lang.annotation.Aspect"/>
+		<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+		<context:exclude-filter type="annotation" expression="org.springframework.web.bind.annotation.ControllerAdvice"/>
+	</context:component-scan>
+	
+	<beans profile="dev">
+		<util:properties id="appInfo" location="classpath:kr/or/ddit/appInfo_dev.properties" />
+		<bean id="savePathInfo" class="kr.or.ddit.init.FileSavePathInfoDev" />
+	</beans>
+	<beans profile="stage">
+		<util:properties id="appInfo" location="classpath:kr/or/ddit/appInfo_stage.properties" />
+		<bean id="savePathInfo" class="kr.or.ddit.init.FileSavePathInfoStage" />
+	</beans>
+	
+	
+		<beans xmlns="http://www.springframework.org/schema/beans"
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xmlns:task="http://www.springframework.org/schema/task"
+		xsi:schemaLocation="
+	        http://www.springframework.org/schema/beans
+	        http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	        http://www.springframework.org/schema/task
+	        http://www.springframework.org/schema/task/spring-task-3.0.xsd">
+	
+		<task:annotation-driven />
+	
+	</beans>
+	
+		
+</beans>

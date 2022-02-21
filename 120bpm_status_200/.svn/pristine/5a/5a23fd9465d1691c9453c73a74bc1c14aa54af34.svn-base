@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.file.dao.FileUtilDAO">
+
+<insert id="fileUploadInfo"  parameterType="java.util.List">
+	<selectKey resultType="int" order="BEFORE" keyProperty="startAttNo">
+<!-- 	 SELECT NVL(TO_NUMBER(SUBSTR(MAX(FILE_CODE),5)),0)+1 
+	 FROM ATCH_FILE
+	 WHERE MENU_CL_CODE =#{menuClCode} -->
+		SELECT NVL(MAX(FILE_NO) , 0) +1 FROM  ATCH_FILE 
+  </selectKey>
+ 
+	INSERT ALL
+<foreach collection="list" index="idx" item="file">
+ INTO  ATCH_FILE
+  (
+    FILE_NM,    FILE_SIZE,    FILE_RGSDE, FILE_SAVED_NM,
+    FANCY_SIZE,       FILE_NO,    MENU_CL_CODE,   
+    FILE_MIME,    PRJCT_NO,    BO_NO,    TEMP_AT, MEM_ID
+) VALUES (
+	#{file.fileNm,jdbcType=VARCHAR},
+	#{file.fileSize,jdbcType=NUMERIC},
+	sysdate,
+	#{file.fileSavedNm,jdbcType=VARCHAR},
+	#{file.fancySize,jdbcType=VARCHAR},
+	#{startAttNo} + #{idx},
+	#{file.menuClCode,jdbcType=VARCHAR},
+	#{file.fileMime,jdbcType=VARCHAR},
+	#{file.prjctNo,jdbcType=NUMERIC},
+	#{file.boNo,jdbcType=VARCHAR},
+	#{file.tempAt , jdbcType=VARCHAR},
+	#{file.memId ,  jdbcType=VARCHAR}
+		)
+</foreach>
+SELECT * FROM DUAL
+</insert>
+
+<select id="fileSelect" parameterType="kr.or.ddit.file.vo.AtchFIleVO" resultType="kr.or.ddit.file.vo.AtchFIleVO">
+ SELECT
+    FILE_NM,    FILE_SIZE,    FILE_RGSDE,
+    FILE_SAVED_NM,    FANCY_SIZE,   ADD_DC,
+    FILE_NO,    MENU_CL_CODE,    FILE_MIME,
+    PRJCT_NO,    BO_NO,    TEMP_AT
+FROM
+    ATCH_FILE
+    WHERE FILE_NO = #{fileNo}
+	AND TEMP_AT = '0' 
+	 
+</select>
+
+
+<select id="fileSelectAll" resultType="kr.or.ddit.file.vo.AtchFIleVO" parameterType="java.util.ArrayList">
+SELECT
+    FILE_NM,    FILE_SIZE,    FILE_RGSDE,
+    FILE_SAVED_NM,    FANCY_SIZE,   ADD_DC,
+    FILE_NO,    MENU_CL_CODE,    FILE_MIME,
+    PRJCT_NO,    BO_NO,    TEMP_AT
+FROM
+    ATCH_FILE
+  	WHERE TEMP_AT = '0' AND FILE_NO IN
+  	<foreach collection="array" item="arr" open="(" close=")" separator=",">
+  	 #{arr}
+  	 </foreach>
+	 
+</select>
+
+</mapper>

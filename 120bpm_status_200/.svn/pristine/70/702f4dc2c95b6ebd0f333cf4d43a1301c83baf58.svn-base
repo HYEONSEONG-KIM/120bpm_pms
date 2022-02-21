@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:c="http://www.springframework.org/schema/c"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:websocket="http://www.springframework.org/schema/websocket"
+	xsi:schemaLocation="http://www.springframework.org/schema/websocket http://www.springframework.org/schema/websocket/spring-websocket-4.3.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.3.xsd">
+
+	<bean id = "servletServerContainer" 
+		class = "org.springframework.web.socket.server.standard.ServletServerContainerFactoryBean"
+		p:maxSessionIdleTimeout="30000"
+		p:maxBinaryMessageBufferSize="8192"
+	/>
+	<bean id = "chattingMsgHandler" class = "kr.or.ddit.chatting.handler.ChattingMsgHandler"></bean>
+	
+	<bean class = "kr.or.ddit.chatting.handler.PushMsgHandler" id = "pushMsgHandler"></bean>
+	
+	<bean class = "kr.or.ddit.chatting.handler.EditorHandler" id = "editorHandler"></bean>
+
+	<websocket:message-broker application-destination-prefix="/app">
+		
+		<websocket:stomp-endpoint path="/stomp/mainPush" allowed-origins="*">
+			<websocket:sockjs/>
+		</websocket:stomp-endpoint>
+	
+		<websocket:stomp-endpoint path="/stomp/chatting"
+			allowed-origins="*">
+			<websocket:sockjs />
+		</websocket:stomp-endpoint>
+		
+		<websocket:stomp-endpoint path="/stomp/chatPush" allowed-origins="*" >
+			<websocket:sockjs/>
+		</websocket:stomp-endpoint>
+		
+		<websocket:stomp-endpoint path="/stomp/editor" allowed-origins="*">
+			<websocket:sockjs/>
+		</websocket:stomp-endpoint>
+		
+		<websocket:stomp-endpoint path="/stomp/editorMsg" allowed-origins="*">
+			<websocket:sockjs/>
+		</websocket:stomp-endpoint>
+		
+		<websocket:simple-broker prefix="/topic, /queue" />
+		
+		<websocket:argument-resolvers>
+			<bean id = "handlerMethodArgumentResolver" class="org.springframework.security.messaging.context.AuthenticationPrincipalArgumentResolver"></bean>
+		</websocket:argument-resolvers>
+	</websocket:message-broker>
+	
+</beans>
